@@ -10,6 +10,7 @@ globalThis.FhirJsonLdContextGenerator = require('../fhirlib/FhirJsonLdContextGen
 globalThis.BundleDefinitionLoader = require('../fhirlib/BundleDefinitionLoader').BundleDefinitionLoader;
 globalThis.FhirShExJGenerator = require('../fhirlib/FhirShExJGenerator');
 globalThis.FhirTurtleSerializer = require('../fhirlib/FhirTurtleSerializer');
+globalThis.ShExValidator = require('../fhirlib/shex-validator.js');
 globalThis.NestedWriter = require('../fhirlib/NestedWriter');
 globalThis.P = require('../fhirlib/Prefixes');
 

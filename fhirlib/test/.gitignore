@@ -1,0 +1,2 @@
+# Don't save FHIR examples in the Git repository
+fhir/examples

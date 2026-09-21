@@ -1,0 +1,2569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FHIR RDF Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#e9edf0;
+  --surface:#ffffff;
+  --surface-2:#f3f6f8;
+  --ink:#0f1419;
+  --ink-2:#48555f;
+  --ink-3:#7c8a94;
+  --rule:#cfd8de;
+  --rule-soft:#e2e8ec;
+  --json:#1b5e8f;
+  --rdf:#7a2e52;
+  --ok:#1d6b4f;
+  --warn:#8a5a00;
+  --err:#a32020;
+  --sel:rgba(27,94,143,.13);
+  --shadow:0 1px 0 rgba(15,20,25,.06);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0e1216;
+    --surface:#141a1f;
+    --surface-2:#1a2127;
+    --ink:#e6ecf0;
+    --ink-2:#a3b1bb;
+    --ink-3:#71828d;
+    --rule:#2a343c;
+    --rule-soft:#222b32;
+    --json:#68b2e8;
+    --rdf:#e28fb8;
+    --ok:#5fc295;
+    --warn:#d9a441;
+    --err:#f08080;
+    --sel:rgba(104,178,232,.16);
+    --shadow:0 1px 0 rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0e1216; --surface:#141a1f; --surface-2:#1a2127;
+  --ink:#e6ecf0; --ink-2:#a3b1bb; --ink-3:#71828d;
+  --rule:#2a343c; --rule-soft:#222b32;
+  --json:#68b2e8; --rdf:#e28fb8; --ok:#5fc295; --warn:#d9a441; --err:#f08080;
+  --sel:rgba(104,178,232,.16); --shadow:0 1px 0 rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:14px;line-height:1.5;
+  -webkit-text-size-adjust:100%;
+  display:flex;flex-direction:column;
+}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--json);outline-offset:1px}
+code,pre,textarea,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* ---------- chrome ---------- */
+header{
+  display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  padding:10px 16px;border-bottom:1px solid var(--rule);
+  background:var(--surface);box-shadow:var(--shadow);
+}
+.wordmark{font-weight:600;letter-spacing:-.018em;font-size:16px;white-space:nowrap}
+.wordmark .j{color:var(--json)}
+.wordmark .r{color:var(--rdf)}
+.tagline{color:var(--ink-3);font-size:12.5px;flex:1 1 220px;min-width:0}
+.chrome-actions{display:flex;gap:6px;align-items:center;margin-left:auto}
+button.ghost{
+  background:transparent;border:1px solid var(--rule);border-radius:3px;
+  padding:4px 9px;font-size:12.5px;cursor:pointer;color:var(--ink-2);
+}
+button.ghost:hover{border-color:var(--ink-3);color:var(--ink)}
+button.solid{
+  background:var(--json);border:1px solid var(--json);color:#fff;border-radius:3px;
+  padding:4px 11px;font-size:12.5px;cursor:pointer;font-weight:500;
+}
+:root[data-theme="dark"] button.solid,
+:root:not([data-theme="light"]) button.solid{color:#0b1015}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) button.solid{color:#fff}}
+button.solid:hover{filter:brightness(1.08)}
+
+/* ---------- workbench ---------- */
+main{flex:1 1 auto;display:grid;grid-template-columns:minmax(300px,var(--split,44fr)) 6px minmax(300px,56fr);min-height:0}
+.pane{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--surface)}
+.pane + .gutter + .pane{border-left:none}
+.gutter{cursor:col-resize;background:var(--rule-soft);border-left:1px solid var(--rule);border-right:1px solid var(--rule)}
+.gutter:hover{background:var(--json)}
+.panehead{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:7px 12px;border-bottom:1px solid var(--rule);background:var(--surface-2);min-height:38px;
+}
+.panetitle{font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--ink-2)}
+.panetitle.j{color:var(--json)}
+.panetitle.r{color:var(--rdf)}
+select{
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;
+  padding:3px 6px;font-size:12.5px;max-width:230px;
+}
+.spacer{flex:1 1 auto}
+
+/* editor */
+.editor-wrap{flex:1 1 auto;display:flex;min-height:0;overflow:hidden;position:relative}
+.gutter-nums{
+  padding:10px 8px 10px 12px;text-align:right;color:var(--ink-3);
+  font-size:12.5px;line-height:1.55;background:var(--surface-2);
+  border-right:1px solid var(--rule-soft);overflow:hidden;user-select:none;min-width:44px;
+  font-family:"IBM Plex Mono",monospace;
+}
+textarea#json{
+  flex:1 1 auto;border:0;resize:none;padding:10px 12px;background:transparent;
+  font-size:12.5px;line-height:1.55;tab-size:2;outline:none;white-space:pre;overflow:auto;
+}
+textarea#json::selection{background:var(--sel)}
+
+/* tabs */
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  background:transparent;border:0;border-bottom:2px solid transparent;
+  padding:4px 9px 5px;font-size:12.5px;cursor:pointer;color:var(--ink-3);white-space:nowrap;border-radius:2px 2px 0 0;
+}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--rdf);border-bottom-color:var(--rdf);font-weight:500}
+.views{flex:1 1 auto;min-height:0;position:relative}
+.view{position:absolute;inset:0;display:none;flex-direction:column;min-height:0}
+.view.on{display:flex}
+pre.out{
+  margin:0;flex:1 1 auto;overflow:auto;padding:12px 14px;font-size:12.5px;line-height:1.55;
+  white-space:pre;tab-size:2;
+}
+/* turtle syntax colors */
+.t-pfx{color:var(--ink-3)}
+.t-iri{color:var(--json)}
+.t-pn{color:var(--rdf)}
+.t-lit{color:var(--ok)}
+.t-dt{color:var(--warn)}
+.t-cm{color:var(--ink-3);font-style:italic}
+.t-bn{color:var(--ink-2)}
+
+/* sparql */
+.sparql{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}
+textarea#schema,textarea#query{
+  border:0;border-bottom:1px solid var(--rule);background:var(--surface-2);
+  padding:10px 12px;font-size:12.5px;line-height:1.5;resize:vertical;height:172px;outline:none;white-space:pre;overflow:auto;
+}
+textarea#schema{height:210px}
+.verdict{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--rule-soft);font-size:13px}
+.verdict.pass{color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,transparent)}
+.verdict.fail{color:var(--err);background:color-mix(in srgb,var(--err) 7%,transparent)}
+.verdict .mono{color:var(--ink-2);font-size:12px}
+td.st-ok{color:var(--ok)}
+td.st-no{color:var(--err)}
+.qbar{display:flex;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--rule-soft);flex-wrap:wrap}
+.results{flex:1 1 auto;overflow:auto;padding:0}
+table.res{border-collapse:collapse;width:100%;font-size:12.5px;font-family:"IBM Plex Mono",monospace}
+table.res th{
+  position:sticky;top:0;background:var(--surface-2);text-align:left;font-weight:600;
+  padding:6px 10px;border-bottom:1px solid var(--rule);color:var(--ink-2);white-space:nowrap;
+}
+table.res td{padding:5px 10px;border-bottom:1px solid var(--rule-soft);vertical-align:top;max-width:460px;overflow-wrap:anywhere}
+table.res tr:hover td{background:var(--surface-2)}
+
+/* graph */
+.graphwrap{flex:1 1 auto;position:relative;overflow:hidden;background:var(--surface)}
+svg#graph{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+svg#graph.dragging{cursor:grabbing}
+.glabel{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--ink-2);pointer-events:none}
+.gedge{stroke:var(--rule);stroke-width:1}
+.gedgelabel{font-family:"IBM Plex Mono",monospace;font-size:8.5px;fill:var(--ink-3);pointer-events:none}
+.legend{
+  position:absolute;right:10px;bottom:10px;background:var(--surface);border:1px solid var(--rule);
+  border-radius:3px;padding:7px 9px;font-size:11px;color:var(--ink-2);display:flex;gap:12px;flex-wrap:wrap;max-width:min(92%,420px)
+}
+.swatch{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:-1px}
+
+/* docs */
+.docs{flex:1 1 auto;overflow:auto;padding:20px 22px 40px;max-width:74ch;font-size:13.5px}
+.docs h2{font-size:15px;margin:26px 0 8px;letter-spacing:-.01em}
+.docs h2:first-child{margin-top:0}
+.docs h3{font-size:13px;margin:18px 0 6px;color:var(--ink-2)}
+.docs p{margin:0 0 10px;color:var(--ink-2)}
+.docs ul{margin:0 0 12px;padding-left:18px;color:var(--ink-2)}
+.docs li{margin-bottom:5px}
+.docs code{background:var(--surface-2);padding:1px 4px;border-radius:2px;font-size:12px;border:1px solid var(--rule-soft)}
+.docs pre{background:var(--surface-2);border:1px solid var(--rule-soft);border-radius:3px;padding:10px 12px;overflow:auto;font-size:12px;line-height:1.5;margin:0 0 12px}
+.docs a{color:var(--json)}
+.docs table{border-collapse:collapse;width:100%;font-size:12.5px;margin:0 0 14px}
+.docs th,.docs td{border:1px solid var(--rule-soft);padding:5px 8px;text-align:left;vertical-align:top}
+.docs th{background:var(--surface-2);font-weight:600}
+
+/* options */
+.opts{display:flex;gap:14px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--rule-soft);background:var(--surface-2)}
+label.opt{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-2);cursor:pointer}
+label.opt input{accent-color:var(--rdf);margin:0}
+.baseinput{
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:2px 6px;
+  font-size:12px;font-family:"IBM Plex Mono",monospace;width:230px;max-width:52vw;
+}
+
+/* status */
+.status{
+  display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+  padding:5px 16px;border-top:1px solid var(--rule);background:var(--surface);
+  font-size:11.5px;color:var(--ink-3);
+}
+.status b{font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.status .err{color:var(--err)}
+.status .ok{color:var(--ok)}
+.pill{border:1px solid var(--rule);border-radius:999px;padding:1px 8px;font-size:11px;color:var(--ink-2)}
+
+.msg{padding:10px 14px;font-size:12.5px;border-bottom:1px solid var(--rule-soft)}
+.msg.error{color:var(--err);background:color-mix(in srgb,var(--err) 7%,transparent)}
+.msg.note{color:var(--ink-2);background:var(--surface-2)}
+.msg .mono{font-size:12px}
+
+@media (max-width:860px){
+  main{grid-template-columns:1fr;grid-template-rows:minmax(180px,38fr) 6px minmax(240px,62fr)}
+  .gutter{cursor:row-resize;border:none;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .tagline{display:none}
+  .docs{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">FHIR <span class="j">JSON</span> → <span class="r">RDF</span> Playground</div>
+  <div class="tagline">Turtle serialization following the HL7 FHIR RDF rules — convert, query, visualize, round-trip.</div>
+  <div class="chrome-actions">
+    <button class="ghost" id="btn-theme" title="Switch light/dark">Dark</button>
+    <button class="ghost" id="btn-copy">Copy Turtle</button>
+    <button class="solid" id="btn-convert">Convert</button>
+  </div>
+</header>
+
+<main id="main">
+  <section class="pane">
+    <div class="panehead">
+      <span class="panetitle j">FHIR JSON</span>
+      <select id="samples" aria-label="Load an example resource"></select>
+      <span class="spacer"></span>
+      <button class="ghost" id="btn-format">Format</button>
+      <button class="ghost" id="btn-roundtrip">Round-trip</button>
+    </div>
+    <div class="editor-wrap">
+      <div class="gutter-nums mono" id="linenums">1</div>
+      <textarea id="json" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="FHIR JSON input"></textarea>
+    </div>
+  </section>
+
+  <div class="gutter" id="gutter" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Resize panes"></div>
+
+  <section class="pane">
+    <div class="panehead">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-view="ttl" aria-selected="true">Turtle</button>
+        <button class="tab" role="tab" data-view="nt" aria-selected="false">N-Triples</button>
+        <button class="tab" role="tab" data-view="graph" aria-selected="false">Graph</button>
+        <button class="tab" role="tab" data-view="sparql" aria-selected="false">SPARQL</button>
+        <button class="tab" role="tab" data-view="shex" aria-selected="false">ShEx</button>
+        <button class="tab" role="tab" data-view="trip" aria-selected="false">Round-trip</button>
+        <button class="tab" role="tab" data-view="docs" aria-selected="false">Rules</button>
+      </div>
+    </div>
+
+    <div class="opts">
+      <label class="opt" title="Resource IRIs are built from this base plus ResourceType/id"><span>Base</span>
+        <input class="baseinput mono" id="base" value="http://example.org/fhir/" spellcheck="false"></label>
+      <label class="opt"><input type="checkbox" id="opt-link" checked> fhir:l links</label>
+      <label class="opt"><input type="checkbox" id="opt-concept" checked> concept IRIs</label>
+      <label class="opt"><input type="checkbox" id="opt-short"> literal shorthand</label>
+    </div>
+
+    <div class="views" id="views">
+      <div class="view on" data-view="ttl"><pre class="out" id="out-ttl"></pre></div>
+      <div class="view" data-view="nt"><pre class="out mono" id="out-nt"></pre></div>
+
+      <div class="view" data-view="graph">
+        <div class="opts">
+          <label class="opt"><input type="checkbox" id="opt-collapse" checked> collapse RDF lists</label>
+          <label class="opt"><input type="checkbox" id="opt-lits" checked> show literals</label>
+          <label class="opt"><input type="checkbox" id="opt-preds" checked> edge labels</label>
+          <span class="spacer"></span>
+          <button class="ghost" id="btn-relayout">Re-layout</button>
+        </div>
+        <div class="graphwrap">
+          <svg id="graph" role="img" aria-label="RDF graph"></svg>
+          <div class="legend">
+            <span><span class="swatch" style="background:var(--json)"></span>resource IRI</span>
+            <span><span class="swatch" style="background:var(--ink-3);border-radius:50%"></span>blank node</span>
+            <span><span class="swatch" style="background:var(--ok)"></span>literal</span>
+            <span><span class="swatch" style="background:var(--rdf)"></span>concept IRI</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" data-view="sparql">
+        <div class="sparql">
+          <textarea id="query" spellcheck="false" aria-label="SPARQL query"></textarea>
+          <div class="qbar">
+            <button class="solid" id="btn-run">Run query</button>
+            <select id="qpresets" aria-label="Example queries"></select>
+            <span class="spacer"></span>
+            <span id="qstat" class="mono" style="font-size:11.5px;color:var(--ink-3)"></span>
+          </div>
+          <div class="results" id="qresults"></div>
+        </div>
+      </div>
+
+      <div class="view" data-view="shex">
+        <div class="sparql">
+          <textarea id="schema" spellcheck="false" aria-label="ShEx schema"></textarea>
+          <div class="qbar">
+            <button class="solid" id="btn-validate">Validate</button>
+            <label class="opt">shape
+              <select id="shex-shape" aria-label="Shape to validate against"></select></label>
+            <label class="opt">focus
+              <select id="shex-focus" aria-label="Focus node"></select></label>
+            <button class="ghost" id="btn-shex-reset">Reset schema</button>
+            <span class="spacer"></span>
+            <span id="shex-stat" class="mono" style="font-size:11.5px;color:var(--ink-3)"></span>
+          </div>
+          <div class="results" id="shex-results"></div>
+        </div>
+      </div>
+
+      <div class="view" data-view="trip"><div class="results" id="out-trip"></div></div>
+      <div class="view" data-view="docs"><div class="docs" id="out-docs"></div></div>
+    </div>
+  </section>
+</main>
+
+<div class="status">
+  <span>Status <b id="st-state" class="ok">ready</b></span>
+  <span>Triples <b id="st-triples">0</b></span>
+  <span>Subjects <b id="st-subj">0</b></span>
+  <span>Literals <b id="st-lits">0</b></span>
+  <span id="st-time"></span>
+  <span class="spacer" style="flex:1"></span>
+  <span class="pill">Turtle rules per HL7 FHIR R5/R6</span>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   FHIR RDF Playground
+   A single-file workbench that converts FHIR JSON into FHIR RDF (Turtle),
+   queries it with a small SPARQL subset, draws the graph, and checks that
+   the RDF converts back to the original JSON.
+   Serialization follows http://hl7.org/fhir/rdf.html (R5 / R6 ci-build).
+   ===================================================================== */
+
+const NS = {
+  fhir:"http://hl7.org/fhir/",
+  xsd:"http://www.w3.org/2001/XMLSchema#",
+  rdf:"http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  rdfs:"http://www.w3.org/2000/01/rdf-schema#",
+  owl:"http://www.w3.org/2002/07/owl#",
+  loinc:"http://loinc.org/rdf/",
+  sct:"http://snomed.info/id/",
+  rxnorm:"http://purl.bioontology.org/ontology/RXNORM/",
+  icd10:"http://purl.bioontology.org/ontology/ICD10/",
+  mesh:"https://id.nlm.nih.gov/mesh/"
+};
+const RDF_FIRST = NS.rdf+"first", RDF_REST = NS.rdf+"rest", RDF_NIL = NS.rdf+"nil", RDF_TYPE = NS.rdf+"type";
+
+/* IRI stems registered at terminology.hl7.org, keyed by Coding.system */
+const IRI_STEMS = {
+  "http://loinc.org":"http://loinc.org/rdf/",
+  "http://snomed.info/sct":"http://snomed.info/id/",
+  "http://www.nlm.nih.gov/research/umls/rxnorm":"http://purl.bioontology.org/ontology/RXNORM/",
+  "http://hl7.org/fhir/sid/icd-10":"http://purl.bioontology.org/ontology/ICD10/",
+  "http://hl7.org/fhir/sid/icd-10-cm":"http://purl.bioontology.org/ontology/ICD10CM/",
+  "https://www.nlm.nih.gov/mesh":"https://id.nlm.nih.gov/mesh/"
+};
+
+/* Datatypes that can appear as a [x] suffix */
+const FHIR_TYPES = new Set(("Base64Binary Boolean Canonical Code Date DateTime Decimal Id Instant Integer Integer64 Markdown Oid PositiveInt String Time UnsignedInt Uri Url Uuid Xhtml "+
+"Address Age Annotation Attachment Availability CodeableConcept CodeableReference Coding ContactDetail ContactPoint Count DataRequirement Distance Dosage Duration ExtendedContactDetail Expression HumanName Identifier Money MonetaryComponent ParameterDefinition Period Quantity Range Ratio RatioRange Reference RelatedArtifact SampledData Signature Timing TriggerDefinition UsageContext Meta Narrative").split(/\s+/));
+
+/* Element names known to be choice ([x]) bases */
+const CHOICE_BASES = new Set(("value effective onset abatement occurrence deceased multipleBirth born performed asNeeded medication serviced collected timing scheduled product answer initial fixed pattern defaultValue content target dose rate bounds due allowed amount detail when reason subject indication definition item site substance author manufacturer location method route requester using result event probability certainty age note diagnosis instantiates minimum maximum offset topic versionAlgorithm doNotPerform").split(/\s+/));
+
+/* Elements whose FHIR type is uri-ish → get an xsd:anyURI literal plus fhir:l */
+const URI_ELEMENTS = new Set(("url system fullUrl implicitRules instantiatesUri profile targetProfile baseDefinition sourceUri uri valueSet instantiatesCanonical source derivedFrom supportedProfile measure library reference_uri").split(/\s+/));
+/* Elements whose FHIR type is a date/dateTime/instant/time */
+const DATE_ELEMENTS = new Set(("birthDate date dateTime issued authoredOn recordedDate lastUpdated created timestamp start end when whenPrepared whenHandedOver assertedDate dateWritten periodStart periodEnd occurrenceDateTime deceasedDateTime time").split(/\s+/));
+/* Elements whose FHIR type is decimal even when written without a decimal point */
+const DECIMAL_ELEMENTS = new Set(("value factor duration period probabilityDecimal score low high limit origin quantity predictedProbability".split(/\s+/)));
+/* Elements whose FHIR type is xhtml */
+const XHTML_ELEMENTS = new Set(["div"]);
+
+/* ------------------------------------------------------------------
+   1. JSON parser that keeps the raw text of numbers.
+      FHIR decimals must keep their lexical form ("185" is xsd:decimal,
+      not xsd:integer, when the element type is decimal), and JSON.parse
+      throws that information away.
+   ------------------------------------------------------------------ */
+function parseJSON(src){
+  let i=0;
+  const ws=()=>{while(i<src.length && /[\s]/.test(src[i])) i++;};
+  const fail=(m)=>{ const line=src.slice(0,i).split("\n").length;
+    const col=i-src.lastIndexOf("\n",i-1); const e=new Error(m+" (line "+line+", col "+col+")"); e.line=line; throw e; };
+  function value(){
+    ws();
+    const c=src[i];
+    if(c==='{') return obj();
+    if(c==='[') return arr();
+    if(c==='"') return {k:"str",v:str()};
+    if(c==='-'||(c>='0'&&c<='9')) return num();
+    if(src.startsWith("true",i)){i+=4;return {k:"bool",v:true,raw:"true"};}
+    if(src.startsWith("false",i)){i+=5;return {k:"bool",v:false,raw:"false"};}
+    if(src.startsWith("null",i)){i+=4;return {k:"null",v:null};}
+    fail("Unexpected character "+JSON.stringify(c||"<eof>"));
+  }
+  function obj(){
+    i++; const props=[]; ws();
+    if(src[i]==='}'){i++;return {k:"obj",props};}
+    for(;;){
+      ws(); if(src[i]!=='"') fail("Expected a property name");
+      const key=str(); ws();
+      if(src[i]!==':') fail("Expected ':' after property name");
+      i++; const v=value(); props.push([key,v]); ws();
+      if(src[i]===','){i++;continue;}
+      if(src[i]==='}'){i++;return {k:"obj",props};}
+      fail("Expected ',' or '}'");
+    }
+  }
+  function arr(){
+    i++; const items=[]; ws();
+    if(src[i]===']'){i++;return {k:"arr",items};}
+    for(;;){
+      items.push(value()); ws();
+      if(src[i]===','){i++;continue;}
+      if(src[i]===']'){i++;return {k:"arr",items};}
+      fail("Expected ',' or ']'");
+    }
+  }
+  function str(){
+    i++; let out="";
+    for(;;){
+      const c=src[i];
+      if(c===undefined) fail("Unterminated string");
+      if(c==='"'){i++;return out;}
+      if(c==='\\'){
+        const n=src[i+1];
+        if(n==='u'){ out+=String.fromCharCode(parseInt(src.substr(i+2,4),16)); i+=6; continue; }
+        const map={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"\t"};
+        if(!(n in map)) fail("Bad escape \\"+n);
+        out+=map[n]; i+=2; continue;
+      }
+      out+=c; i++;
+    }
+  }
+  function num(){
+    const s=i;
+    if(src[i]==='-')i++;
+    while(/[0-9]/.test(src[i]||""))i++;
+    if(src[i]==='.'){i++;while(/[0-9]/.test(src[i]||""))i++;}
+    if(src[i]==='e'||src[i]==='E'){i++;if(src[i]==='+'||src[i]==='-')i++;while(/[0-9]/.test(src[i]||""))i++;}
+    const raw=src.slice(s,i);
+    if(!/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(raw)) fail("Bad number "+raw);
+    return {k:"num",v:Number(raw),raw};
+  }
+  const v=value(); ws();
+  if(i<src.length) fail("Trailing content after the JSON value");
+  if(v.k!=="obj") fail("A FHIR resource must be a JSON object");
+  return v;
+}
+
+/* ------------------------------------------------------------------
+   2. Term helpers
+   ------------------------------------------------------------------ */
+const iri=(v)=>({t:"iri",v});
+const bn =(v)=>({t:"bnode",v});
+const lit=(v,dt)=>({t:"lit",v,dt:dt||null});
+const termKey=(t)=> t.t==="lit" ? "L\u0000"+t.v+"\u0000"+(t.dt||"") : t.t+"\u0000"+t.v;
+const sameTerm=(a,b)=>a&&b&&termKey(a)===termKey(b);
+
+/* ------------------------------------------------------------------
+   3. FHIR JSON → triples
+   ------------------------------------------------------------------ */
+function splitChoice(name){
+  for(let i=1;i<name.length;i++){
+    const c=name[i];
+    if(c>="A"&&c<="Z"){
+      const base=name.slice(0,i), suffix=name.slice(i);
+      if(CHOICE_BASES.has(base)&&FHIR_TYPES.has(suffix)) return {base,type:suffix};
+    }
+  }
+  return null;
+}
+function xsdForType(fhirType,rawValue){
+  switch(fhirType){
+    case "Boolean": return NS.xsd+"boolean";
+    case "Integer": case "Integer64": return NS.xsd+"integer";
+    case "PositiveInt": return NS.xsd+"positiveInteger";
+    case "UnsignedInt": return NS.xsd+"nonNegativeInteger";
+    case "Decimal": return /[eE]/.test(rawValue||"") ? NS.xsd+"double" : NS.xsd+"decimal";
+    case "Uri": case "Url": case "Canonical": case "Uuid": case "Oid": return NS.xsd+"anyURI";
+    case "Base64Binary": return NS.xsd+"base64Binary";
+    case "Instant": return NS.xsd+"dateTime";
+    case "DateTime": case "Date": return dateXsd(rawValue);
+    case "Time": return NS.xsd+"time";
+    case "Xhtml": return NS.rdf+"XMLLiteral";
+    default: return null; /* string, code, id, markdown → plain literal */
+  }
+}
+function dateXsd(v){
+  if(/^\d{4}$/.test(v)) return NS.xsd+"gYear";
+  if(/^\d{4}-\d{2}$/.test(v)) return NS.xsd+"gYearMonth";
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return NS.xsd+"date";
+  if(/^\d{4}-\d{2}-\d{2}T/.test(v)) return NS.xsd+"dateTime";
+  if(/^\d{2}:\d{2}/.test(v)) return NS.xsd+"time";
+  return NS.xsd+"string";
+}
+/* Infer the FHIR primitive type of an element when no [x] suffix says it */
+function inferPrimitiveType(name,node,parentProps){
+  if(node.k==="bool") return "Boolean";
+  if(node.k==="num"){
+    if(/[.eE]/.test(node.raw)) return "Decimal";
+    if(DECIMAL_ELEMENTS.has(name) && hasSibling(parentProps,["unit","code","system","comparator"])) return "Decimal";
+    if(name==="value"&&hasSibling(parentProps,["unit","code","system"])) return "Decimal";
+    return "Integer";
+  }
+  if(XHTML_ELEMENTS.has(name)) return "Xhtml";
+  if(URI_ELEMENTS.has(name)) return "Uri";
+  if(DATE_ELEMENTS.has(name)) return /^\d{4}-\d{2}-\d{2}T/.test(node.v)?"DateTime":"Date";
+  if(name==="reference"||name==="display"||name==="text") return "String";
+  return "String";
+}
+function hasSibling(props,names){
+  if(!props) return false;
+  return props.some(([k])=>names.includes(k));
+}
+
+function convert(ast,opts){
+  const triples=[];
+  let bnCount=0;
+  const nb=()=>bn("b"+(++bnCount));
+  const add=(s,p,o)=>{triples.push({s,p,o});return o;};
+  const base=opts.base.replace(/\/*$/,"/");
+  const deferred=[];   /* resources to serialize as their own subjects */
+  const notes=[];
+
+  function resourceIRI(res,fallbackId){
+    const rt=getProp(res,"resourceType"), id=getProp(res,"id");
+    if(!rt) return null;
+    if(id&&id.k==="str") return iri(base+rt.v+"/"+id.v);
+    if(fallbackId) return iri(fallbackId);
+    return iri("");
+  }
+  function getProp(node,name){
+    if(!node||node.k!=="obj") return null;
+    const hit=node.props.find(([k])=>k===name);
+    return hit?hit[1]:null;
+  }
+
+  /* Emit a primitive element node: [ a fhir:Type ; fhir:v "x"^^xsd:t ; fhir:l <..> ] */
+  function emitPrimitive(subject,pred,node,fhirType,explicitType,underscore){
+    const n=nb();
+    add(subject,iri(NS.fhir+pred),n);
+    if(explicitType) add(n,iri(RDF_TYPE),iri(NS.fhir+fhirType));
+    const raw = node.k==="num" ? node.raw : String(node.v);
+    const dt = xsdForType(fhirType,raw);
+    add(n,iri(NS.fhir+"v"),lit(raw,dt));
+    if(opts.link && (fhirType==="Uri"||fhirType==="Url"||fhirType==="Canonical"||fhirType==="Uuid"||fhirType==="Oid")){
+      let target=raw;
+      if(target.includes("|")){ const [u,ver]=target.split("|"); target=u+"?version="+ver; }
+      if(/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(target)||target.startsWith("#")) add(n,iri(NS.fhir+"l"),iri(target));
+    }
+    if(underscore) attachPrimitiveExtras(n,underscore);
+    return n;
+  }
+  /* JSON "_birthDate": {extension:[...], id:"x"} merges into the primitive node */
+  function attachPrimitiveExtras(node,extras){
+    if(extras.k!=="obj") return;
+    for(const [k,v] of extras.props){
+      if(k==="id") emitPrimitive(node,"id",v,"Id",false,null);
+      else if(k==="extension"||k==="modifierExtension") emitList(node,k,v.items||[],null);
+    }
+  }
+
+  function emitList(subject,pred,items,ctx){
+    /* RDF collection preserving order */
+    const head=nb();
+    add(subject,iri(NS.fhir+pred),head);
+    let cur=head;
+    items.forEach((item,idx)=>{
+      const member=emitValueNode(pred,item,ctx);
+      add(cur,iri(RDF_FIRST),member);
+      if(idx===items.length-1){ add(cur,iri(RDF_REST),iri(RDF_NIL)); }
+      else { const next=nb(); add(cur,iri(RDF_REST),next); cur=next; }
+    });
+    if(items.length===0) notes.push("Empty array for "+pred+": FHIR RDF lists must not be empty.");
+    return head;
+  }
+
+  /* Build a stand-alone node (used for list members) */
+  function emitValueNode(pred,node,ctx){
+    const holder=nb();
+    if(node.k==="obj"){
+      if(getProp(node,"resourceType")){ /* inline resource inside a list (Bundle.entry.resource-like) */
+        return serializeInline(node,null);
+      }
+      fillObject(holder,node,pred);
+      return holder;
+    }
+    const ft=inferPrimitiveType(pred,node,ctx);
+    const n=nb();
+    const raw=node.k==="num"?node.raw:String(node.v);
+    add(n,iri(NS.fhir+"v"),lit(raw,xsdForType(ft,raw)));
+    return n;
+  }
+
+  function conceptIRIs(subject,node){
+    if(!opts.concept) return;
+    const coding=getProp(node,"coding");
+    const codings = coding&&coding.k==="arr" ? coding.items : [];
+    for(const c of codings){
+      if(c.k!=="obj") continue;
+      const sys=getProp(c,"system"), code=getProp(c,"code");
+      if(!sys||!code) continue;
+      const stem=IRI_STEMS[sys.v];
+      if(!stem) continue;
+      add(subject,iri(RDF_TYPE),iri(stem+encodeCode(code.v)));
+    }
+  }
+  function encodeCode(c){
+    return String(c).replace(/[^A-Za-z0-9\-._~\u00A0-\uFFFF]/g,ch=>encodeURIComponent(ch));
+  }
+
+  /* Fill the properties of an object node (a datatype, backbone element, or resource) */
+  function fillObject(subject,node,parentPred){
+    const props=node.props;
+    const underscores=new Map();
+    for(const [k,v] of props) if(k.startsWith("_")) underscores.set(k.slice(1),v);
+
+    /* concept IRIs for CodeableConcept / Coding */
+    if(getProp(node,"coding")) conceptIRIs(subject,node);
+
+    /* Reference.reference gets an optional fhir:l to the resolved target */
+    if(opts.link&&parentPred!==null&&!getProp(node,"resourceType")){
+      const ref=getProp(node,"reference");
+      if(ref&&ref.k==="str") add(subject,iri(NS.fhir+"l"),iri(resolveRef(ref.v,rootSubject)));
+    }
+
+    for(const [key,val] of props){
+      if(key.startsWith("_")) continue;
+      if(key==="resourceType") continue;
+
+      let pred=key, forcedType=null, explicit=false;
+      const ch=splitChoice(key);
+      if(ch){ pred=ch.base; forcedType=ch.type; explicit=true; }
+
+      if(val.k==="arr"){
+        if(key==="contained"){
+          const head=nb(); add(subject,iri(NS.fhir+"contained"),head);
+          let cur=head;
+          val.items.forEach((r,idx)=>{
+            const cid=getProp(r,"id");
+            const target=iri((subject.t==="iri"?subject.v:"")+"#"+(cid?cid.v:"c"+(idx+1)));
+            deferred.push({node:r,subject:target});
+            add(cur,iri(RDF_FIRST),target);
+            if(idx===val.items.length-1) add(cur,iri(RDF_REST),iri(RDF_NIL));
+            else {const n2=nb(); add(cur,iri(RDF_REST),n2); cur=n2;}
+          });
+          continue;
+        }
+        emitList(subject,pred,val.items,node.props);
+        continue;
+      }
+
+      if(val.k==="obj"){
+        if(getProp(val,"resourceType")){
+          const t=serializeInline(val,null);
+          add(subject,iri(NS.fhir+pred),t);
+          continue;
+        }
+        const n=nb();
+        add(subject,iri(NS.fhir+pred),n);
+        if(explicit) add(n,iri(RDF_TYPE),iri(NS.fhir+forcedType));
+        fillObject(n,val,pred);
+        continue;
+      }
+
+      /* primitive */
+      const ft = forcedType || inferPrimitiveType(key,val,props);
+      emitPrimitive(subject,pred,val,ft,explicit,underscores.get(key)||null);
+    }
+  }
+  function resolveRef(ref,subject){
+    if(/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(ref)) return ref;
+    if(ref.startsWith("#")) return (subject.t==="iri"?subject.v:"")+ref;
+    return base+ref.replace(/^\//,"");
+  }
+
+  /* A resource that becomes its own subject in the output */
+  function serializeInline(resNode,forcedIRI){
+    const rt=getProp(resNode,"resourceType");
+    const subj = forcedIRI || resourceIRI(resNode) || bn("r"+(++bnCount));
+    deferred.push({node:resNode,subject:subj,type:rt?rt.v:null});
+    return subj;
+  }
+
+  /* --- root --- */
+  const rootType=getProp(ast,"resourceType");
+  if(!rootType||rootType.k!=="str") throw new Error("The JSON needs a string \"resourceType\" property.");
+  const rootSubject=resourceIRI(ast)||iri("");
+  const done=new Set();
+
+  function writeResource(node,subject,isRoot){
+    const key=termKey(subject);
+    if(done.has(key)) return;
+    done.add(key);
+    const rt=getProp(node,"resourceType");
+    const hasModExt = node.props.some(([k])=>k==="modifierExtension");
+    add(subject,iri(RDF_TYPE),iri(NS.fhir+(hasModExt?"_":"")+(rt?rt.v:"Resource")));
+    if(isRoot) add(subject,iri(NS.fhir+"nodeRole"),iri(NS.fhir+"treeRoot"));
+    fillObject(subject,node,null);
+  }
+
+  writeResource(ast,rootSubject,true);
+  while(deferred.length){
+    const d=deferred.shift();
+    writeResource(d.node,d.subject,false);
+  }
+  return {triples,notes,rootSubject};
+}
+
+/* ------------------------------------------------------------------
+   4. Turtle serializer — nests blank nodes, folds RDF collections
+   ------------------------------------------------------------------ */
+function serializeTurtle(triples,opts){
+  const bySubject=new Map(), refCount=new Map(), subjIsObject=new Map();
+  for(const t of triples){
+    const k=termKey(t.s);
+    if(!bySubject.has(k)) bySubject.set(k,{term:t.s,po:[]});
+    bySubject.get(k).po.push([t.p,t.o]);
+    if(t.o.t!=="lit"){
+      const ok=termKey(t.o);
+      refCount.set(ok,(refCount.get(ok)||0)+1);
+      subjIsObject.set(ok,true);
+    }
+  }
+  const inlineable=(term)=> term.t==="bnode" && (refCount.get(termKey(term))||0)===1;
+
+  const prefixesUsed=new Set(["fhir","xsd","rdf"]);
+  const pn=(full)=>{
+    for(const [p,ns] of Object.entries(NS)){
+      if(full.startsWith(ns)){
+        const local=full.slice(ns.length);
+        if(/^[A-Za-z0-9_][A-Za-z0-9_\-.]*$/.test(local)&&!local.endsWith(".")){ prefixesUsed.add(p); return p+":"+local; }
+      }
+    }
+    return null;
+  };
+  const esc=(s)=>s.replace(/\\/g,"\\\\").replace(/"/g,'\\"').replace(/\n/g,"\\n").replace(/\r/g,"\\r").replace(/\t/g,"\\t");
+  const litStr=(t)=>{
+    if(opts.shorthand){
+      if(t.dt===NS.xsd+"integer"&&/^-?\d+$/.test(t.v)) return t.v;
+      if(t.dt===NS.xsd+"boolean") return t.v;
+      if(t.dt===NS.xsd+"decimal"&&/^-?\d+\.\d+$/.test(t.v)) return t.v;
+      if(t.dt===NS.xsd+"double"&&/[eE]/.test(t.v)) return t.v;
+      if(!t.dt) return '"'+esc(t.v)+'"';
+    }
+    const s='"'+esc(t.v)+'"';
+    if(!t.dt) return s;
+    const p=pn(t.dt);
+    return s+"^^"+(p||"<"+t.dt+">");
+  };
+  const termStr=(t)=>{
+    if(t.t==="lit") return litStr(t);
+    if(t.t==="bnode") return "_:"+t.v;
+    if(t.v==="") return "<>";
+    const p=pn(t.v);
+    return p||"<"+t.v+">";
+  };
+  const predStr=(p)=> p.v===RDF_TYPE?"a":termStr(p);
+
+  const listHead=(term)=>{
+    if(term.t!=="bnode") return null;
+    const e=bySubject.get(termKey(term));
+    if(!e) return null;
+    const preds=e.po.map(([p])=>p.v);
+    if(!preds.includes(RDF_FIRST)||!preds.includes(RDF_REST)) return null;
+    if(e.po.length!==2) return null;
+    return e;
+  };
+  function collectList(term){
+    const out=[];
+    let cur=term;
+    for(let guard=0;guard<10000;guard++){
+      const e=listHead(cur);
+      if(!e) return null;
+      const first=e.po.find(([p])=>p.v===RDF_FIRST)[1];
+      const rest=e.po.find(([p])=>p.v===RDF_REST)[1];
+      out.push(first);
+      if(rest.t==="iri"&&rest.v===RDF_NIL) return out;
+      if(!inlineable(rest)) return null;
+      cur=rest;
+    }
+    return null;
+  }
+
+  const emitted=new Set();
+  function objStr(o,indent){
+    if(o.t==="bnode"&&inlineable(o)){
+      const list=collectList(o);
+      if(list){
+        emitted.add(termKey(o));
+        markListEmitted(o);
+        const parts=list.map(m=>objStr(m,indent+"  "));
+        const oneLine="( "+parts.join(" ")+" )";
+        if(oneLine.length<=70&&!oneLine.includes("\n")) return oneLine;
+        return "(\n"+indent+"  "+parts.join("\n"+indent+"  ")+"\n"+indent+")";
+      }
+      const e=bySubject.get(termKey(o));
+      if(e){
+        emitted.add(termKey(o));
+        const body=poBlock(e,indent+"  ");
+        if(body.oneLine&&body.text.length<=64) return "[ "+body.text+" ]";
+        return "[\n"+indent+"  "+body.text+"\n"+indent+"]";
+      }
+      return "[]";
+    }
+    return termStr(o);
+  }
+  function markListEmitted(head){
+    let cur=head;
+    for(let g=0;g<10000;g++){
+      const e=bySubject.get(termKey(cur));
+      if(!e) return;
+      emitted.add(termKey(cur));
+      const rest=e.po.find(([p])=>p.v===RDF_REST);
+      if(!rest) return;
+      if(rest[1].t!=="bnode") return;
+      cur=rest[1];
+    }
+  }
+  function poBlock(entry,indent){
+    const groups=[];
+    for(const [p,o] of entry.po){
+      const last=groups[groups.length-1];
+      if(last&&last.p.v===p.v) last.objs.push(o);
+      else groups.push({p,objs:[o]});
+    }
+    /* rdf:type first, nodeRole second — matches the spec's examples */
+    groups.sort((a,b)=>rank(a.p.v)-rank(b.p.v));
+    const lines=groups.map(g=>{
+      const objs=g.objs.map(o=>objStr(o,indent));
+      return predStr(g.p)+" "+objs.join(", ");
+    });
+    const text=lines.join(" ;\n"+indent);
+    return {text,oneLine:lines.length===1&&!text.includes("\n")};
+  }
+  function rank(p){
+    if(p===RDF_TYPE) return 0;
+    if(p===NS.fhir+"nodeRole") return 1;
+    if(p===NS.fhir+"l") return 2;
+    if(p===NS.fhir+"v") return 3;
+    return 4;
+  }
+
+  const bodies=[];
+  for(const [k,entry] of bySubject){
+    if(entry.term.t==="bnode"&&(inlineable(entry.term)||emitted.has(k))) continue;
+    if(emitted.has(k)) continue;
+    const block=poBlock(entry,"  ");
+    bodies.push(termStr(entry.term)+" "+block.text+" .");
+    emitted.add(k);
+  }
+
+  const header=[...prefixesUsed].sort().map(p=>"@prefix "+(p+":").padEnd(7)+"<"+NS[p]+"> .").join("\n");
+  return header+"\n\n"+bodies.join("\n\n")+"\n";
+}
+
+/* ------------------------------------------------------------------
+   5. N-Triples
+   ------------------------------------------------------------------ */
+function serializeNTriples(triples){
+  const esc=(s)=>s.replace(/\\/g,"\\\\").replace(/"/g,'\\"').replace(/\n/g,"\\n").replace(/\r/g,"\\r").replace(/\t/g,"\\t");
+  const T=(t)=> t.t==="iri" ? "<"+t.v+">" : t.t==="bnode" ? "_:"+t.v :
+    '"'+esc(t.v)+'"'+(t.dt?"^^<"+t.dt+">":"");
+  return triples.map(t=>T(t.s)+" "+T(t.p)+" "+T(t.o)+" .").join("\n")+"\n";
+}
+
+/* ------------------------------------------------------------------
+   6. RDF → FHIR JSON (round-trip check)
+   ------------------------------------------------------------------ */
+function rdfToJSON(triples){
+  const out=new Map();
+  for(const t of triples){
+    const k=termKey(t.s);
+    if(!out.has(k)) out.set(k,{term:t.s,po:[]});
+    out.get(k).po.push([t.p.v,t.o]);
+  }
+  const get=(term)=>out.get(termKey(term));
+  const root=[...out.values()].find(e=>e.po.some(([p,o])=>p===NS.fhir+"nodeRole"&&o.v===NS.fhir+"treeRoot"));
+  if(!root) throw new Error("No fhir:treeRoot found.");
+
+  const isList=(term)=>{ const e=get(term); return !!e&&e.po.some(([p])=>p===RDF_FIRST); };
+  function listItems(term){
+    const items=[];
+    let cur=term;
+    while(cur&&!(cur.t==="iri"&&cur.v===RDF_NIL)){
+      const e=get(cur); if(!e) break;
+      const f=e.po.find(([p])=>p===RDF_FIRST), r=e.po.find(([p])=>p===RDF_REST);
+      if(f) items.push(f[1]);
+      cur=r?r[1]:null;
+    }
+    return items;
+  }
+  function litValue(l){
+    const dt=l.dt||"";
+    if(dt===NS.xsd+"boolean") return l.v==="true";
+    if(/integer|Integer|decimal|double/.test(dt)) return Number(l.v);
+    return l.v;
+  }
+  function typeOf(entry){
+    const t=entry.po.find(([p,o])=>p===RDF_TYPE&&o.v.startsWith(NS.fhir));
+    return t?t[1].v.slice(NS.fhir.length):null;
+  }
+  function nodeToValue(term,pred,parentIsResourceSlot){
+    if(term.t==="lit") return litValue(term);
+    const e=get(term);
+    if(!e) return term.v;
+    const v=e.po.find(([p])=>p===NS.fhir+"v");
+    if(v) return litValue(v[1]);
+    /* a nested resource referenced by IRI */
+    const ty=typeOf(e);
+    if(ty&&/^[A-Z]/.test(ty)&&e.po.some(([p])=>p===NS.fhir+"id")&&parentIsResourceSlot) return buildResource(e);
+    const obj={};
+    if(ty&&isResourceName(ty)&&e.po.some(([p])=>p===NS.fhir+"status"||p===NS.fhir+"id")&&parentIsResourceSlot) obj.resourceType=ty;
+    fill(obj,e);
+    return obj;
+  }
+  const RESOURCE_HINT=/^(Patient|Observation|Condition|Bundle|MedicationRequest|Practitioner|Organization|Encounter|Procedure|DiagnosticReport|AllergyIntolerance|Immunization|Questionnaire|QuestionnaireResponse|CarePlan|Specimen|Device|Location|PlanDefinition|ActivityDefinition|Medication|ServiceRequest)$/;
+  const isResourceName=(n)=>RESOURCE_HINT.test(n);
+
+  function fill(obj,entry){
+    const ty=typeOf(entry);
+    const groups=new Map();
+    for(const [p,o] of entry.po){
+      if(p===RDF_TYPE||p===NS.fhir+"nodeRole"||p===NS.fhir+"l"||p===NS.fhir+"v") continue;
+      if(!p.startsWith(NS.fhir)) continue;
+      const name=p.slice(NS.fhir.length).replace(/^_/,"");
+      if(!groups.has(name)) groups.set(name,[]);
+      groups.get(name).push(o);
+    }
+    for(const [name,objs] of groups){
+      for(const o of objs){
+        if(isList(o)){
+          const items=listItems(o);
+          obj[name]=items.map(it=>nodeToValue(it,name,name==="resource"||name==="contained"));
+          continue;
+        }
+        const e=get(o);
+        let key=name;
+        if(e){
+          const childType=typeOf(e);
+          if(childType&&CHOICE_BASES.has(name)&&FHIR_TYPES.has(childType)) key=name+childType;
+        }
+        obj[key]=nodeToValue(o,name,name==="resource");
+        /* a primitive that also carries extensions or an id becomes "_name" in JSON */
+        if(e&&e.po.some(([p])=>p===NS.fhir+"v")){
+          const extras=e.po.filter(([p])=>p!==NS.fhir+"v"&&p!==NS.fhir+"l"&&p!==RDF_TYPE&&p!==NS.fhir+"nodeRole");
+          if(extras.length) obj["_"+key]=fill({},{po:extras});
+        }
+      }
+    }
+    return obj;
+  }
+  function buildResource(entry){
+    const obj={};
+    const ty=typeOf(entry);
+    if(ty) obj.resourceType=ty.replace(/^_/,"");
+    return fill(obj,entry);
+  }
+  return buildResource(root);
+}
+
+function deepDiff(a,b,path,out){
+  out=out||[]; path=path||"";
+  const ta=Array.isArray(a)?"array":a===null?"null":typeof a;
+  const tb=Array.isArray(b)?"array":b===null?"null":typeof b;
+  if(ta!==tb){
+    if(!((ta==="number"&&tb==="string")||(ta==="string"&&tb==="number"))||String(a)!==String(b))
+      out.push({path:path||"/",a:JSON.stringify(a),b:JSON.stringify(b)});
+    return out;
+  }
+  if(ta==="array"){
+    const n=Math.max(a.length,b.length);
+    for(let i=0;i<n;i++) deepDiff(a[i],b[i],path+"["+i+"]",out);
+    return out;
+  }
+  if(ta==="object"){
+    const keys=new Set([...Object.keys(a||{}),...Object.keys(b||{})]);
+    for(const k of keys) deepDiff(a?a[k]:undefined,b?b[k]:undefined,path+"."+k,out);
+    return out;
+  }
+  if(String(a)!==String(b)) out.push({path:path||"/",a:JSON.stringify(a),b:JSON.stringify(b)});
+  return out;
+}
+
+/* ------------------------------------------------------------------
+   7. A small SPARQL engine (SELECT over a BGP, with paths and filters)
+   ------------------------------------------------------------------ */
+function runSparql(queryText,triples){
+  const prefixes={...NS};
+  let q=queryText;
+  q=q.replace(/^\s*PREFIX\s+([A-Za-z0-9_\-]*):\s*<([^>]*)>\s*/gim,(m,p,u)=>{prefixes[p]=u;return "";});
+
+  const distinct=/SELECT\s+DISTINCT/i.test(q);
+  const selMatch=q.match(/SELECT\s+(?:DISTINCT\s+)?([\s\S]*?)\s+WHERE/i);
+  if(!selMatch) throw new Error("Only SELECT ... WHERE { } queries are supported.");
+  const projection=selMatch[1].trim()==="*"?null:selMatch[1].trim().split(/\s+/).map(s=>s.replace(/^\?/,""));
+  const whereStart=q.indexOf("{",q.search(/WHERE/i));
+  if(whereStart<0) throw new Error("Missing the WHERE clause braces.");
+  let depth=0,whereEnd=-1;
+  for(let i=whereStart;i<q.length;i++){
+    if(q[i]==="{")depth++;
+    else if(q[i]==="}"){depth--;if(depth===0){whereEnd=i;break;}}
+  }
+  if(whereEnd<0) throw new Error("Unbalanced braces in the WHERE clause.");
+  const whereBody=q.slice(whereStart+1,whereEnd);
+  const tail=q.slice(whereEnd+1);
+  const limit=(tail.match(/LIMIT\s+(\d+)/i)||[])[1];
+  const offset=(tail.match(/OFFSET\s+(\d+)/i)||[])[1];
+  const orderRaw=(tail.match(/ORDER\s+BY\s+([^\n]+?)(?:\s+LIMIT|\s+OFFSET|$)/i)||[])[1];
+
+  /* --- tokenize a group --- */
+  function tokenize(s){
+    const re=/(\bOPTIONAL\b|\bFILTER\b|\bUNION\b)|(<[^>]*>)|((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')(?:\^\^[^\s,;.)\]}]+|@[A-Za-z\-]+)?)|(\?[A-Za-z0-9_]+)|([{}()\[\],;.])|([^\s{}()\[\],;]+)/g;
+    const out=[];let m;
+    while((m=re.exec(s))){
+      const tok=m[0].trim();
+      if(tok) out.push(tok);
+    }
+    return out;
+  }
+  let bnCounter=0;
+  function parseGroup(tokens){
+    const patterns=[];
+    let i=0;
+    function term(tok){
+      if(tok.startsWith("?")) return {t:"var",v:tok.slice(1)};
+      if(tok.startsWith("<")) return iri(tok.slice(1,-1));
+      if(tok.startsWith('"')||tok.startsWith("'")){
+        const m=tok.match(/^"((?:[^"\\]|\\.)*)"(?:\^\^(.+))?$/)||tok.match(/^'((?:[^'\\]|\\.)*)'(?:\^\^(.+))?$/);
+        const val=m[1].replace(/\\(.)/g,(x,c)=>({n:"\n",t:"\t",r:"\r"}[c]||c));
+        return lit(val,m[2]?expand(m[2]):null);
+      }
+      if(tok==="a") return iri(RDF_TYPE);
+      if(/^-?\d+\.\d+$/.test(tok)) return lit(tok,NS.xsd+"decimal");
+      if(/^-?\d+$/.test(tok)) return lit(tok,NS.xsd+"integer");
+      if(tok==="true"||tok==="false") return lit(tok,NS.xsd+"boolean");
+      return iri(expand(tok));
+    }
+    function expand(t){
+      if(t.startsWith("<")) return t.slice(1,-1);
+      const idx=t.indexOf(":");
+      if(idx<0) throw new Error("Not an IRI or prefixed name: "+t);
+      const p=t.slice(0,idx);
+      if(!(p in prefixes)) throw new Error("Unknown prefix \""+p+":\" — declare it with PREFIX.");
+      return prefixes[p]+t.slice(idx+1);
+    }
+    function parsePath(tok){
+      if(tok.startsWith("?")) return {t:"var",v:tok.slice(1)};
+      /* supports p, p1/p2, p*, p+ on single predicates */
+      const parts=tok.split("/").map(seg=>{
+        const mod=/[*+]$/.test(seg)?seg.slice(-1):null;
+        const bare=mod?seg.slice(0,-1):seg;
+        return {iri:bare==="a"?RDF_TYPE:expand(bare),mod};
+      });
+      if(parts.length===1&&!parts[0].mod) return iri(parts[0].iri);
+      return {t:"path",parts};
+    }
+    while(i<tokens.length){
+      const tok=tokens[i];
+      if(tok==="."||tok===";"||tok===","){i++;continue;}
+      if(/^OPTIONAL$/i.test(tok)){
+        i++;
+        if(tokens[i]!=="{") throw new Error("OPTIONAL must be followed by a { } group.");
+        let d=0,j=i;
+        for(;j<tokens.length;j++){ if(tokens[j]==="{")d++; else if(tokens[j]==="}"){d--;if(d===0)break;} }
+        patterns.push({kind:"optional",group:parseGroup(tokens.slice(i+1,j))});
+        i=j+1; continue;
+      }
+      if(/^FILTER$/i.test(tok)){
+        i++;
+        let d=0,j=i,buf=[];
+        for(;j<tokens.length;j++){
+          if(tokens[j]==="(")d++;
+          buf.push(tokens[j]);
+          if(tokens[j]===")"){d--;if(d===0){j++;break;}}
+        }
+        patterns.push({kind:"filter",expr:buf.join(" ")});
+        i=j; continue;
+      }
+      if(tok==="{"){ /* plain nested group: inline it */
+        let d=0,j=i;
+        for(;j<tokens.length;j++){ if(tokens[j]==="{")d++; else if(tokens[j]==="}"){d--;if(d===0)break;} }
+        parseGroup(tokens.slice(i+1,j)).forEach(p=>patterns.push(p));
+        i=j+1; continue;
+      }
+      /* triple pattern with ; and , continuation and [ ... ] anywhere */
+      const subj=parseObjectTerm();
+      if(i<tokens.length&&!".;,]}".includes(tokens[i])) parsePredObjList(subj);
+    }
+
+    function parseObjectTerm(){
+      const tok=tokens[i];
+      if(tok==="["){
+        i++;
+        const v={t:"var",v:"__b"+(++bnCounter)};
+        if(tokens[i]==="]"){i++;return v;}
+        parsePredObjList(v);
+        if(tokens[i]==="]") i++;
+        return v;
+      }
+      i++;
+      if(tok===undefined) throw new Error("Unexpected end of the triple pattern.");
+      return term(tok);
+    }
+    function parsePredObjList(subj){
+      for(;;){
+        if(i>=tokens.length) return;
+        const t=tokens[i];
+        if(t==="]"||t==="}"||t===".") return;
+        const predTok=tokens[i++];
+        const pred=predTok==="a"?iri(RDF_TYPE):parsePath(predTok);
+        for(;;){
+          const o=parseObjectTerm();
+          patterns.push({kind:"triple",s:subj,p:pred,o});
+          if(tokens[i]===","){i++;continue;}
+          break;
+        }
+        if(tokens[i]===";"){i++;continue;}
+        return;
+      }
+    }
+    return patterns;
+  }
+
+  const patterns=parseGroup(tokenize(whereBody));
+
+  /* --- evaluation --- */
+  const byPred=new Map();
+  for(const t of triples){
+    if(!byPred.has(t.p.v)) byPred.set(t.p.v,[]);
+    byPred.get(t.p.v).push(t);
+  }
+  const bindVal=(term,b)=> term.t==="var" ? b[term.v] : term;
+  function matchTerm(pattern,value,b,next){
+    if(pattern.t==="var"){
+      const cur=b[pattern.v];
+      if(cur) return sameTerm(cur,value);
+      next[pattern.v]=value;
+      return true;
+    }
+    return sameTerm(pattern,value);
+  }
+  function pathTargets(startTerm,parts){
+    let frontier=[startTerm];
+    for(const part of parts){
+      const next=[];
+      const pool=byPred.get(part.iri)||[];
+      if(part.mod==="*"||part.mod==="+"){
+        const seen=new Set(), queue=[...frontier], reach=[];
+        if(part.mod==="*") frontier.forEach(f=>{seen.add(termKey(f));reach.push(f);});
+        while(queue.length){
+          const cur=queue.shift();
+          for(const t of pool) if(sameTerm(t.s,cur)){
+            const k=termKey(t.o);
+            if(!seen.has(k)){seen.add(k);reach.push(t.o);queue.push(t.o);}
+          }
+        }
+        next.push(...reach);
+      } else {
+        for(const f of frontier) for(const t of pool) if(sameTerm(t.s,f)) next.push(t.o);
+      }
+      frontier=next;
+      if(!frontier.length) break;
+    }
+    return frontier;
+  }
+  function solve(pats,bindings){
+    let sols=bindings;
+    for(const p of pats){
+      if(p.kind==="filter"){ sols=sols.filter(b=>evalFilter(p.expr,b)); continue; }
+      if(p.kind==="optional"){
+        const out=[];
+        for(const b of sols){
+          const sub=solve(p.group,[{...b}]);
+          if(sub.length) out.push(...sub); else out.push(b);
+        }
+        sols=out; continue;
+      }
+      const out=[];
+      for(const b of sols){
+        if(p.p.t==="path"){
+          const s=bindVal(p.s,b);
+          const starts = s ? [s] : [...new Set(triples.map(t=>termKey(t.s)))].map(k=>triples.find(t=>termKey(t.s)===k).s);
+          for(const st of starts){
+            if(p.s.t==="var"&&b[p.s.v]&&!sameTerm(b[p.s.v],st)) continue;
+            for(const target of pathTargets(st,p.p.parts)){
+              const next={};
+              if(!matchTerm(p.s,st,b,next)) continue;
+              if(!matchTerm(p.o,target,{...b,...next},next)) continue;
+              out.push({...b,...next});
+            }
+          }
+          continue;
+        }
+        const pool = p.p.t==="iri" ? (byPred.get(p.p.v)||[]) : triples;
+        for(const t of pool){
+          const next={};
+          if(!matchTerm(p.s,t.s,b,next)) continue;
+          const b1={...b,...next};
+          if(p.p.t==="var"&&!matchTerm(p.p,t.p,b1,next)) continue;
+          const b2={...b,...next};
+          if(!matchTerm(p.o,t.o,b2,next)) continue;
+          out.push({...b,...next});
+        }
+      }
+      sols=out;
+      if(!sols.length) break;
+    }
+    return sols;
+  }
+
+  /* --- filters --- */
+  function evalFilter(expr,b){
+    let s=expr.trim();
+    if(s.startsWith("(")&&s.endsWith(")")) s=s.slice(1,-1);
+    return !!evalExpr(s,b);
+  }
+  function evalExpr(s,b){
+    s=s.trim();
+    const or=splitTop(s,"||"); if(or.length>1) return or.some(x=>evalExpr(x,b));
+    const and=splitTop(s,"&&"); if(and.length>1) return and.every(x=>evalExpr(x,b));
+    if(s.startsWith("!")) return !evalExpr(s.slice(1),b);
+    if(s.startsWith("(")&&s.endsWith(")")&&balanced(s.slice(1,-1))) return evalExpr(s.slice(1,-1),b);
+    const fn=s.match(/^([A-Za-z]+)\s*\(([\s\S]*)\)$/);
+    if(fn){
+      const name=fn[1].toLowerCase(), args=splitTop(fn[2],",").map(a=>a.trim());
+      if(name==="bound") return !!b[args[0].replace(/^\?/,"")];
+      if(name==="regex"){
+        const v=strOf(args[0],b); if(v===undefined) return false;
+        const flags=args[2]?strOf(args[2],b):"";
+        return new RegExp(strOf(args[1],b),flags).test(v);
+      }
+      if(name==="contains"){const v=strOf(args[0],b);return v!==undefined&&v.includes(strOf(args[1],b));}
+      if(name==="strstarts"){const v=strOf(args[0],b);return v!==undefined&&v.startsWith(strOf(args[1],b));}
+      if(name==="str"||name==="lcase"||name==="ucase") return strOf(s,b);
+      if(name==="isliteral") return (b[args[0].replace(/^\?/,"")]||{}).t==="lit";
+      if(name==="isiri"||name==="isuri") return (b[args[0].replace(/^\?/,"")]||{}).t==="iri";
+    }
+    for(const op of ["!=",">=","<=","=",">","<"]){
+      const parts=splitTop(s,op);
+      if(parts.length===2){
+        const l=valOf(parts[0],b), r=valOf(parts[1],b);
+        if(l===undefined||r===undefined) return false;
+        const nl=Number(l), nr=Number(r);
+        const num=!isNaN(nl)&&!isNaN(nr)&&l!==""&&r!=="";
+        switch(op){
+          case "=": return num?nl===nr:String(l)===String(r);
+          case "!=": return num?nl!==nr:String(l)!==String(r);
+          case ">": return num?nl>nr:String(l)>String(r);
+          case "<": return num?nl<nr:String(l)<String(r);
+          case ">=": return num?nl>=nr:String(l)>=String(r);
+          case "<=": return num?nl<=nr:String(l)<=String(r);
+        }
+      }
+    }
+    return !!valOf(s,b);
+  }
+  function balanced(s){let d=0;for(const c of s){if(c==="(")d++;if(c===")"){d--;if(d<0)return false;}}return d===0;}
+  function splitTop(s,sep){
+    const out=[];let d=0,cur="",inStr=false,q=null;
+    for(let i=0;i<s.length;i++){
+      const c=s[i];
+      if((c==='"'||c==="'")&&s[i-1]!=="\\"){ if(!inStr){inStr=true;q=c;} else if(q===c){inStr=false;q=null;} }
+      if(!inStr){
+        if(c==="(")d++;
+        if(c===")")d--;
+        if(d===0&&s.startsWith(sep,i)){out.push(cur);cur="";i+=sep.length-1;continue;}
+      }
+      cur+=c;
+    }
+    out.push(cur);
+    return out.filter(x=>x.trim()!=="");
+  }
+  function strOf(tok,b){const v=valOf(tok,b);return v===undefined?undefined:String(v);}
+  function valOf(tok,b){
+    tok=tok.trim();
+    const fn=tok.match(/^([A-Za-z]+)\s*\(([\s\S]*)\)$/);
+    if(fn){
+      const name=fn[1].toLowerCase(), inner=splitTop(fn[2],",")[0];
+      const v=valOf(inner,b);
+      if(name==="str") return v===undefined?undefined:String(v);
+      if(name==="lcase") return String(v).toLowerCase();
+      if(name==="ucase") return String(v).toUpperCase();
+      if(name==="strlen") return String(v).length;
+      return v;
+    }
+    if(tok.startsWith("?")){
+      const t=b[tok.slice(1)];
+      if(!t) return undefined;
+      return t.v;
+    }
+    const m=tok.match(/^"((?:[^"\\]|\\.)*)"/)||tok.match(/^'((?:[^'\\]|\\.)*)'/);
+    if(m) return m[1];
+    if(/^-?\d+(\.\d+)?$/.test(tok)) return tok;
+    if(tok.startsWith("<")) return tok.slice(1,-1);
+    return tok;
+  }
+
+  let sols=solve(patterns,[{}]);
+  const vars = projection || [...new Set(sols.flatMap(b=>Object.keys(b)))].filter(v=>!v.startsWith("__b"));
+  let rows=sols.map(b=>{const r={};for(const v of vars) r[v]=b[v]||null;return r;});
+  if(distinct){
+    const seen=new Set();
+    rows=rows.filter(r=>{const k=vars.map(v=>r[v]?termKey(r[v]):"").join("\u0001");if(seen.has(k))return false;seen.add(k);return true;});
+  }
+  if(orderRaw){
+    const specs=orderRaw.trim().split(/\s+(?=\?|DESC|ASC)/i).map(s=>{
+      const d=/^DESC/i.test(s);
+      const v=(s.match(/\?([A-Za-z0-9_]+)/)||[])[1];
+      return {v,d};
+    }).filter(s=>s.v);
+    rows.sort((a,b)=>{
+      for(const s of specs){
+        const av=a[s.v]?a[s.v].v:"", bv=b[s.v]?b[s.v].v:"";
+        const na=Number(av),nb2=Number(bv);
+        let c = (!isNaN(na)&&!isNaN(nb2)&&av!==""&&bv!=="") ? na-nb2 : String(av).localeCompare(String(bv));
+        if(c) return s.d?-c:c;
+      }
+      return 0;
+    });
+  }
+  const off=offset?parseInt(offset,10):0;
+  if(off) rows=rows.slice(off);
+  if(limit) rows=rows.slice(0,parseInt(limit,10));
+  return {vars,rows};
+}
+
+/* ------------------------------------------------------------------
+   8. Samples
+   ------------------------------------------------------------------ */
+const SAMPLES=[
+{name:"Patient — Jim Chalmers", query:`PREFIX fhir: <http://hl7.org/fhir/>
+
+SELECT ?family ?given ?birthDate WHERE {
+  ?p a fhir:Patient ;
+     fhir:name/rdf:rest*/rdf:first ?n ;
+     fhir:birthDate [ fhir:v ?birthDate ] .
+  ?n fhir:family [ fhir:v ?family ] ;
+     fhir:given/rdf:rest*/rdf:first [ fhir:v ?given ] .
+}`, json:{
+  resourceType:"Patient",
+  id:"example",
+  text:{status:"generated",div:"<div xmlns=\"http://www.w3.org/1999/xhtml\">Jim Chalmers, born 1974-12-25</div>"},
+  identifier:[{use:"usual",system:"urn:oid:1.2.36.146.595.217.0.1",value:"12345",
+    type:{coding:[{system:"http://terminology.hl7.org/CodeSystem/v2-0203",code:"MR"}]}}],
+  active:true,
+  name:[{use:"official",family:"Chalmers",given:["Peter","James"]},{use:"usual",given:["Jim"]}],
+  telecom:[{system:"phone",value:"(03) 5555 6473",use:"work",rank:1}],
+  gender:"male",
+  birthDate:"1974-12-25",
+  _birthDate:{extension:[{url:"http://hl7.org/fhir/StructureDefinition/patient-birthTime",valueDateTime:"1974-12-25T14:35:45-05:00"}]},
+  address:[{use:"home",line:["534 Erewhon St"],city:"PleasantVille",state:"Vic",postalCode:"3999"}],
+  managingOrganization:{reference:"Organization/1",display:"Burgers University Medical Center"}
+}},
+
+{name:"Observation — body weight (LOINC + SNOMED)", query:`PREFIX fhir: <http://hl7.org/fhir/>
+PREFIX loinc: <http://loinc.org/rdf/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Concept IRIs let you match on the terminology, not the code string.
+SELECT ?obs ?value ?unit WHERE {
+  ?obs a fhir:Observation ;
+       fhir:code ?cc ;
+       fhir:value ?q .
+  ?cc a loinc:29463-7 .
+  ?q fhir:value [ fhir:v ?value ] ;
+     fhir:unit  [ fhir:v ?unit ] .
+}`, json:{
+  resourceType:"Observation",
+  id:"body-weight",
+  status:"final",
+  category:[{coding:[{system:"http://terminology.hl7.org/CodeSystem/observation-category",code:"vital-signs",display:"Vital Signs"}]}],
+  code:{coding:[
+    {system:"http://loinc.org",code:"29463-7",display:"Body Weight"},
+    {system:"http://snomed.info/sct",code:"27113001",display:"Body weight"}
+  ],text:"Body Weight"},
+  subject:{reference:"Patient/example",display:"Peter James Chalmers"},
+  effectiveDateTime:"2026-03-11T09:30:10+01:00",
+  performer:[{reference:"Practitioner/example"}],
+  valueQuantity:{value:83.9,unit:"kg",system:"http://unitsofmeasure.org",code:"kg"},
+  interpretation:[{coding:[{system:"http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",code:"N",display:"Normal"}]}]
+}},
+
+{name:"Condition — cancer diagnosis (bridge example)", query:`PREFIX fhir: <http://hl7.org/fhir/>
+PREFIX sct: <http://snomed.info/id/>
+
+# The Yosemite tutorial's question: which records carry a SNOMED concept?
+SELECT ?condition ?concept ?onset WHERE {
+  ?condition a fhir:Condition ;
+             fhir:code ?cc ;
+             fhir:onset [ fhir:v ?onset ] .
+  ?cc a ?concept .
+  FILTER(strstarts(str(?concept), "http://snomed.info/id/"))
+}`, json:{
+  resourceType:"Condition",
+  id:"lung-ca",
+  clinicalStatus:{coding:[{system:"http://terminology.hl7.org/CodeSystem/condition-clinical",code:"active"}]},
+  verificationStatus:{coding:[{system:"http://terminology.hl7.org/CodeSystem/condition-ver-status",code:"confirmed"}]},
+  category:[{coding:[{system:"http://terminology.hl7.org/CodeSystem/condition-category",code:"encounter-diagnosis",display:"Encounter Diagnosis"}]}],
+  severity:{coding:[{system:"http://snomed.info/sct",code:"24484000",display:"Severe"}]},
+  code:{coding:[
+    {system:"http://snomed.info/sct",code:"254637007",display:"Non-small cell lung cancer"},
+    {system:"http://hl7.org/fhir/sid/icd-10",code:"C34.9",display:"Malignant neoplasm of bronchus or lung, unspecified"}
+  ],text:"Non-small cell lung cancer"},
+  subject:{reference:"Patient/example"},
+  onsetDateTime:"2025-11-04",
+  recordedDate:"2025-11-06"
+}},
+
+{name:"Bundle — two entries with fullUrl", query:`PREFIX fhir: <http://hl7.org/fhir/>
+
+SELECT ?entryResource ?type ?id WHERE {
+  ?b a fhir:Bundle ;
+     fhir:entry/rdf:rest*/rdf:first ?e .
+  ?e fhir:resource ?entryResource .
+  ?entryResource a ?type ;
+                 fhir:id [ fhir:v ?id ] .
+}`, json:{
+  resourceType:"Bundle",
+  id:"bundle-references",
+  type:"collection",
+  entry:[
+    {fullUrl:"http://example.org/fhir/Patient/23",
+     resource:{resourceType:"Patient",id:"23",identifier:[{system:"http://example.org/ids",value:"1234567"}],
+       name:[{family:"Smith",given:["Darryl"]}],gender:"male",birthDate:"1988-02-02"}},
+    {fullUrl:"http://example.org/fhir/Observation/hb",
+     resource:{resourceType:"Observation",id:"hb",status:"final",
+       code:{coding:[{system:"http://loinc.org",code:"718-7",display:"Hemoglobin [Mass/volume] in Blood"}]},
+       subject:{reference:"Patient/23"},
+       valueQuantity:{value:13.2,unit:"g/dL",system:"http://unitsofmeasure.org",code:"g/dL"}}}
+  ]
+}},
+
+{name:"MedicationRequest — extensions + modifierExtension", query:`PREFIX fhir: <http://hl7.org/fhir/>
+
+SELECT ?resource ?type ?extUrl WHERE {
+  ?resource a ?type ;
+            fhir:modifierExtension/rdf:rest*/rdf:first ?ext .
+  ?ext fhir:url [ fhir:v ?extUrl ] .
+}`, json:{
+  resourceType:"MedicationRequest",
+  id:"MR321",
+  extension:[
+    {url:"http://example.org/fhir/StructureDefinition/observation-bodyPosition",
+     valueCodeableConcept:{coding:[{system:"http://snomed.info/sct",code:"33586001",display:"Sitting position (finding)"}]}}
+  ],
+  modifierExtension:[
+    {url:"http://example.org/fhir/StructureDefinition/anti-prescription",valueBoolean:true}
+  ],
+  status:"active",
+  intent:"order",
+  medicationCodeableConcept:{coding:[{system:"http://www.nlm.nih.gov/research/umls/rxnorm",code:"1049502",display:"Acetaminophen 325 MG Oral Tablet"}]},
+  subject:{reference:"Patient/example"},
+  authoredOn:"2026-05-02",
+  dosageInstruction:[{text:"One tablet every 6 hours as needed",timing:{repeat:{frequency:4,period:1,periodUnit:"d"}},asNeededBoolean:true}]
+}},
+
+{name:"PlanDefinition — contained resource", query:`PREFIX fhir: <http://hl7.org/fhir/>
+
+SELECT ?parent ?containedResource ?status WHERE {
+  ?parent fhir:contained/rdf:rest*/rdf:first ?containedResource .
+  ?containedResource fhir:status [ fhir:v ?status ] .
+}`, json:{
+  resourceType:"PlanDefinition",
+  id:"KDN5",
+  contained:[{resourceType:"ActivityDefinition",id:"1111",status:"draft",
+    description:"Gemcitabine 1250 mg/m² IV over 30 minutes on days 1 and 8"}],
+  status:"active",
+  title:"Gemcitabine/CARBOplatin",
+  action:[{textEquivalent:"Gemcitabine 1250 mg/m² IV over 30 minutes on days 1 and 8",
+    definitionCanonical:"#1111"}]
+}}
+];
+
+/* ------------------------------------------------------------------
+   8b. ShEx — a subset of ShExC, parsed and evaluated in the browser
+   Supports: PREFIX/BASE/IMPORT(ignored), start, shape labels,
+   { triple constraints }, CLOSED, EXTRA, nested shapes, @<refs>,
+   OR / AND, node constraints (IRI, BNODE, LITERAL, NONLITERAL, ., a
+   datatype, a value set), cardinalities ?, *, +, {m}, {m,n}, {m,*}.
+   Recursion (RDF lists) is handled by assuming a shape holds while it
+   is being checked, which is what the ShEx spec does for well-founded
+   recursion.
+   ------------------------------------------------------------------ */
+function shexTokenize(src){
+  const re=/(#[^\n]*)|(<[^>]*>)|("(?:[^"\\]|\\.)*")|(\d+)|([A-Za-z_][A-Za-z0-9_.\-]*:[A-Za-z0-9_.\-%]*)|([A-Za-z_][A-Za-z0-9_]*)|(\^\^|\/\/|[{}\[\]();,|@?*+=.~])/g;
+  const out=[];let m;
+  while((m=re.exec(src))){ if(m[1]) continue; out.push(m[0]); }
+  return out;
+}
+function parseShEx(src){
+  const toks=shexTokenize(src);
+  let i=0;
+  const prefixes=Object.assign({},NS);
+  const shapes=new Map();
+  const order=[];
+  let start=null;
+  const peek=(k)=>toks[i+(k||0)];
+  const next=()=>toks[i++];
+  const kw=(t,k)=>!!t&&t.toUpperCase()===k;
+  const STOP=new Set(["?","*","+",";",",","}","|",")","]"]);
+
+  function expand(tok){
+    if(tok===undefined) throw new Error("Unexpected end of the schema.");
+    if(tok.startsWith("<")) return tok.slice(1,-1);
+    if(tok==="a") return RDF_TYPE;
+    const idx=tok.indexOf(":");
+    if(idx<0) throw new Error("Expected an IRI or prefixed name, found \""+tok+"\".");
+    const p=tok.slice(0,idx);
+    if(!(p in prefixes)) throw new Error("Unknown prefix \""+p+":\" in the schema.");
+    return prefixes[p]+tok.slice(idx+1);
+  }
+  function unquote(t){
+    return t.slice(1,-1).replace(/\\(.)/g,(m,c)=>({n:"\n",t:"\t",r:"\r"}[c]||c));
+  }
+  function parseValue(){
+    const t=next();
+    if(t.startsWith('"')){
+      const v=unquote(t);
+      if(peek()==="^^"){ next(); return lit(v,expand(next())); }
+      return lit(v,null);
+    }
+    if(peek()==="~"){ const stem=expand(t); next(); return {t:"stem",v:stem}; }
+    return iri(expand(t));
+  }
+  function parseNodeConstraint(){
+    const t=next();
+    if(t===".") return {k:"nc",kind:"any"};
+    if(kw(t,"IRI")) return {k:"nc",kind:"iri"};
+    if(kw(t,"BNODE")) return {k:"nc",kind:"bnode"};
+    if(kw(t,"LITERAL")) return {k:"nc",kind:"literal"};
+    if(kw(t,"NONLITERAL")) return {k:"nc",kind:"nonliteral"};
+    if(t==="["){
+      const values=[];
+      while(peek()!==undefined&&peek()!=="]") values.push(parseValue());
+      if(peek()==="]") next();
+      return {k:"nc",kind:"values",values};
+    }
+    return {k:"nc",kind:"datatype",dt:expand(t)};
+  }
+  function parseShapeAtom(){
+    let closed=false;const extra=[];
+    for(;;){
+      const t=peek();
+      if(kw(t,"CLOSED")){ next(); closed=true; continue; }
+      if(kw(t,"EXTRA")){
+        next();
+        while(peek()!==undefined&&peek()!=="{"&&!kw(peek(),"CLOSED")) extra.push(expand(next()));
+        continue;
+      }
+      break;
+    }
+    const t=peek();
+    if(t==="{"){ next(); const te=parseTripleExpr(); if(peek()==="}") next(); return {k:"shape",closed,extra,te}; }
+    if(t==="@"){ next(); return {k:"ref",label:expand(next())}; }
+    if(t==="("){ next(); const e=parseShapeExpr(); if(peek()===")") next(); return e; }
+    return parseNodeConstraint();
+  }
+  function parseShapeExpr(){
+    let left=parseShapeAtom();
+    for(;;){
+      const t=peek();
+      if(kw(t,"OR")){ next(); const r=parseShapeAtom();
+        left = left.k==="or" ? {k:"or",alts:left.alts.concat([r])} : {k:"or",alts:[left,r]}; continue; }
+      if(kw(t,"AND")){ next(); const r=parseShapeAtom();
+        left = left.k==="and" ? {k:"and",parts:left.parts.concat([r])} : {k:"and",parts:[left,r]}; continue; }
+      break;
+    }
+    return left;
+  }
+  function parseTripleExpr(){
+    const parts=[];let oneOf=false;
+    for(;;){
+      const t=peek();
+      if(t===undefined||t==="}") break;
+      if(t===";"||t===","){ next(); continue; }
+      if(t==="|"){ next(); oneOf=true; continue; }
+      if(t==="$"){ next(); next(); continue; }
+      parts.push(parseTripleConstraint());
+    }
+    if(oneOf) parts.forEach(p=>{p.min=0;p.oneOf=true;});
+    return parts;
+  }
+  function parseTripleConstraint(){
+    const predTok=next();
+    const pred = predTok==="a" ? RDF_TYPE : expand(predTok);
+    let valueExpr={k:"nc",kind:"any"};
+    const t=peek();
+    const isCard = t==="{" && /^\d+$/.test(peek(1)||"");
+    if(t!==undefined && !STOP.has(t) && !isCard) valueExpr=parseShapeExpr();
+    let min=1,max=1;
+    const c=peek();
+    if(c==="?"){ next(); min=0; }
+    else if(c==="*"){ next(); min=0; max=Infinity; }
+    else if(c==="+"){ next(); max=Infinity; }
+    else if(c==="{" && /^\d+$/.test(peek(1)||"")){
+      next(); min=parseInt(next(),10); max=min;
+      if(peek()===","){ next(); const m2=next(); max = (m2==="*"||m2==="}") ? Infinity : parseInt(m2,10); if(m2==="}") return {k:"tc",pred,valueExpr,min,max}; }
+      if(peek()==="}") next();
+    }
+    while(peek()==="//"){ next(); next(); if(peek()) next(); }   /* skip annotations */
+    return {k:"tc",pred,valueExpr,min,max};
+  }
+
+  while(i<toks.length){
+    const t=peek();
+    if(kw(t,"PREFIX")){ next(); const p=next().replace(/:$/,""); prefixes[p]=next().slice(1,-1); continue; }
+    if(kw(t,"BASE")){ next(); next(); continue; }
+    if(kw(t,"IMPORT")){ next(); next(); continue; }
+    if(kw(t,"START")){ next(); if(peek()==="=") next(); start=parseShapeExpr(); continue; }
+    const label=expand(next());
+    const expr=parseShapeExpr();
+    shapes.set(label,expr);
+    order.push(label);
+  }
+  if(!start&&order.length) start={k:"ref",label:order[0]};
+  return {prefixes,shapes,order,start};
+}
+
+function validateShEx(schema,triples,focus,shapeChoice){
+  const out=new Map();
+  for(const t of triples){ const k=termKey(t.s); if(!out.has(k)) out.set(k,[]); out.get(k).push(t); }
+  const outgoing=(n)=>out.get(termKey(n))||[];
+  const memo=new Map();
+
+  function nodeMatches(node,nc){
+    switch(nc.kind){
+      case "any": return true;
+      case "iri": return node.t==="iri";
+      case "bnode": return node.t==="bnode";
+      case "literal": return node.t==="lit";
+      case "nonliteral": return node.t!=="lit";
+      case "datatype": return node.t==="lit" && ((node.dt||NS.xsd+"string")===nc.dt);
+      case "values": return nc.values.some(v=>{
+        if(v.t==="stem") return node.t==="iri"&&node.v.startsWith(v.v);
+        if(v.t==="lit") return node.t==="lit"&&v.v===node.v&&(v.dt||null)===(node.dt||null);
+        return sameTerm(v,node);
+      });
+    }
+    return false;
+  }
+  function match(node,expr){
+    if(!expr) return {ok:true};
+    if(expr.k==="or"){
+      for(const a of expr.alts){ const r=match(node,a); if(r.ok) return r; }
+      return {ok:false,reason:"none of the alternatives matched"};
+    }
+    if(expr.k==="and"){
+      for(const p of expr.parts){ const r=match(node,p); if(!r.ok) return r; }
+      return {ok:true};
+    }
+    if(expr.k==="nc") return nodeMatches(node,expr) ? {ok:true} : {ok:false,reason:ncLabel(expr)+" expected"};
+    if(expr.k==="ref"){
+      const target=schema.shapes.get(expr.label);
+      if(!target) return {ok:false,reason:"shape <"+expr.label+"> is not defined"};
+      const key=termKey(node)+"\u0000"+expr.label;
+      if(memo.has(key)) return memo.get(key);
+      memo.set(key,{ok:true,assumed:true});
+      const r=match(node,target);
+      memo.set(key,r);
+      return r;
+    }
+    if(expr.k==="shape") return matchShape(node,expr,null);
+    return {ok:true};
+  }
+  function matchShape(node,shape,report){
+    const tri=outgoing(node);
+    let ok=true;
+    const rows=[];
+    for(const tc of shape.te){
+      const cands=tri.filter(t=>t.p.v===tc.pred);
+      const matched=[],bad=[];
+      for(const t of cands){
+        const r=match(t.o,tc.valueExpr);
+        if(r.ok) matched.push(t); else bad.push({t,reason:r.reason});
+      }
+      const n=matched.length;
+      const good = n>=tc.min && n<=tc.max;
+      if(!good) ok=false;
+      if(report) rows.push({
+        pred:tc.pred, card:cardStr(tc), found:cands.length, matched:n, ok:good,
+        note: good ? "" : (cands.length===0 ? "no triple with this predicate"
+          : bad.length ? "value did not match: "+termLabel(bad[0].t.o)+(bad[0].reason?" — "+bad[0].reason:"")
+          : "cardinality is "+n+", expected "+cardStr(tc))
+      });
+    }
+    const closed=[];
+    if(shape.closed){
+      const allowed=new Set(shape.te.map(t=>t.pred).concat(shape.extra));
+      for(const t of tri) if(!allowed.has(t.p.v)&&!closed.includes(t.p.v)) closed.push(t.p.v);
+      if(closed.length) ok=false;
+    }
+    if(report){ report.rows=rows; report.closed=closed; }
+    return {ok,rows,closed};
+  }
+  function cardStr(tc){
+    if(tc.min===1&&tc.max===1) return "1";
+    if(tc.min===0&&tc.max===1) return "0..1";
+    if(tc.min===0&&tc.max===Infinity) return "0..*";
+    if(tc.min===1&&tc.max===Infinity) return "1..*";
+    return tc.min+".."+(tc.max===Infinity?"*":tc.max);
+  }
+  function ncLabel(nc){
+    if(nc.kind==="datatype") return shortIRI(nc.dt);
+    if(nc.kind==="values") return "one of [ "+nc.values.map(v=>v.t==="lit"?'"'+v.v+'"':shortIRI(v.v)+(v.t==="stem"?"~":"")).join(" ")+" ]";
+    return nc.kind.toUpperCase();
+  }
+
+  /* pick the shape to report against */
+  let expr = shapeChoice==="start" ? schema.start : {k:"ref",label:shapeChoice};
+  let label = shapeChoice==="start" ? "start" : shapeChoice;
+  const deref=(e)=>{
+    let guard=0;
+    while(e&&e.k==="ref"&&guard++<50){ label=e.label; e=schema.shapes.get(e.label); }
+    return e;
+  };
+  expr=deref(expr);
+  if(!expr) return {error:"Shape not found in the schema."};
+  if(expr.k==="or"){
+    let picked=null;
+    for(const alt of expr.alts){
+      const r=match(focus,alt);
+      if(r.ok){ picked=alt; if(alt.k==="ref") label=alt.label; break; }
+    }
+    if(!picked){
+      /* report against the alternative whose rdf:type matches, else the first */
+      picked=expr.alts.find(a=>{
+        const s=a.k==="ref"?schema.shapes.get(a.label):a;
+        if(!s||s.k!=="shape") return false;
+        const tc=s.te.find(t=>t.pred===RDF_TYPE);
+        if(!tc) return false;
+        return outgoing(focus).some(t=>t.p.v===RDF_TYPE&&match(t.o,tc.valueExpr).ok);
+      })||expr.alts[0];
+      if(picked.k==="ref") label=picked.label;
+    }
+    expr=deref(picked);
+  }
+  if(expr.k!=="shape"){
+    const r=match(focus,expr);
+    return {ok:r.ok,label,rows:[],closed:[],reason:r.reason};
+  }
+  memo.clear();
+  const report={rows:[],closed:[]};
+  const res=matchShape(focus,expr,report);
+  return {ok:res.ok,label,rows:report.rows,closed:report.closed};
+}
+function shortIRI(v){
+  for(const p of Object.keys(NS)) if(v.startsWith(NS[p])) return p+":"+v.slice(NS[p].length);
+  return "<"+v+">";
+}
+function termLabel(t){
+  if(!t) return "—";
+  if(t.t==="lit") return '"'+(t.v.length>36?t.v.slice(0,35)+"…":t.v)+'"'+(t.dt?"^^"+shortIRI(t.dt):"");
+  if(t.t==="bnode") return "_:"+t.v;
+  return shortIRI(t.v);
+}
+
+/* A cut-down FHIR ShEx schema that covers the bundled samples. */
+const FHIR_SHEX = `# fhir-mini.shex — a hand-cut subset of fhir.shex, enough for the samples here.
+# The full normative schema is at https://build.fhir.org/fhir.shex
+PREFIX fhir: <http://hl7.org/fhir/>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+start = @<Resource>
+
+<Resource> @<Patient> OR @<Observation> OR @<Condition> OR @<Bundle>
+        OR @<MedicationRequest> OR @<PlanDefinition> OR @<ActivityDefinition>
+
+# ---------- resources ----------
+
+<Patient> {
+  a [fhir:Patient] ;
+  fhir:nodeRole [fhir:treeRoot] ? ;
+  fhir:id @<id> ? ;
+  fhir:meta @<AnyNode> ? ;
+  fhir:text @<Narrative> ? ;
+  fhir:extension @<ExtensionList> ? ;
+  fhir:identifier @<IdentifierList> ? ;
+  fhir:active @<boolean> ? ;
+  fhir:name @<HumanNameList> ? ;
+  fhir:telecom @<AnyList> ? ;
+  fhir:gender [ "male" "female" "other" "unknown" ] ? ;
+  fhir:birthDate @<date> ? ;
+  fhir:address @<AnyList> ? ;
+  fhir:managingOrganization @<Reference> ?
+}
+
+<Observation> {
+  a [fhir:Observation] ;
+  fhir:nodeRole [fhir:treeRoot] ? ;
+  fhir:id @<id> ? ;
+  fhir:status @<code> ;
+  fhir:category @<CodeableConceptList> ? ;
+  fhir:code @<CodeableConcept> ;
+  fhir:subject @<Reference> ? ;
+  fhir:encounter @<Reference> ? ;
+  fhir:effective @<dateTime> OR @<Period> ? ;
+  fhir:performer @<ReferenceList> ? ;
+  fhir:value @<Quantity> OR @<CodeableConcept> OR @<string> ? ;
+  fhir:interpretation @<CodeableConceptList> ? ;
+  fhir:note @<AnyList> ?
+}
+
+<Condition> {
+  a [fhir:Condition] ;
+  fhir:nodeRole [fhir:treeRoot] ? ;
+  fhir:id @<id> ? ;
+  fhir:clinicalStatus @<CodeableConcept> ? ;
+  fhir:verificationStatus @<CodeableConcept> ? ;
+  fhir:category @<CodeableConceptList> ? ;
+  fhir:severity @<CodeableConcept> ? ;
+  fhir:code @<CodeableConcept> ? ;
+  fhir:subject @<Reference> ;
+  fhir:onset @<dateTime> OR @<Period> OR @<string> ? ;
+  fhir:recordedDate @<dateTime> ?
+}
+
+<Bundle> {
+  a [fhir:Bundle] ;
+  fhir:nodeRole [fhir:treeRoot] ? ;
+  fhir:id @<id> ? ;
+  fhir:type @<code> ;
+  fhir:timestamp @<dateTime> ? ;
+  fhir:total @<integer> ? ;
+  fhir:entry @<EntryList> ?
+}
+<BundleEntry> {
+  fhir:fullUrl @<uri> ? ;
+  fhir:resource @<Resource> ? ;
+  fhir:search @<AnyNode> ? ;
+  fhir:request @<AnyNode> ?
+}
+
+# The '_' prefix marks a resource carrying a modifierExtension. The normative
+# fhir.shex leaves these classes out, so the schema has to name both spellings.
+<MedicationRequest> {
+  a [fhir:MedicationRequest fhir:_MedicationRequest] ;
+  fhir:nodeRole [fhir:treeRoot] ? ;
+  fhir:id @<id> ? ;
+  fhir:extension @<ExtensionList> ? ;
+  fhir:modifierExtension @<ExtensionList> ? ;
+  fhir:status @<code> ;
+  fhir:intent @<code> ;
+  fhir:medication @<CodeableConcept> OR @<Reference> ? ;
+  fhir:subject @<Reference> ;
+  fhir:authoredOn @<dateTime> ? ;
+  fhir:dosageInstruction @<AnyList> ?
+}
+
+<PlanDefinition> {
+  a [fhir:PlanDefinition fhir:_PlanDefinition] ;
+  fhir:nodeRole [fhir:treeRoot] ? ;
+  fhir:id @<id> ? ;
+  fhir:contained @<AnyList> ? ;
+  fhir:status @<code> ;
+  fhir:title @<string> ? ;
+  fhir:action @<AnyList> ?
+}
+
+<ActivityDefinition> {
+  a [fhir:ActivityDefinition fhir:_ActivityDefinition] ;
+  fhir:id @<id> ? ;
+  fhir:status @<code> ;
+  fhir:description @<string> ?
+}
+
+# ---------- datatypes ----------
+
+<Narrative>       { fhir:status @<code> ; fhir:div @<xhtml> }
+<Coding>          { fhir:system @<uri> ? ; fhir:version @<string> ? ; fhir:code @<code> ? ;
+                    fhir:display @<string> ? ; fhir:userSelected @<boolean> ? }
+<CodeableConcept> { fhir:coding @<CodingList> ? ; fhir:text @<string> ? }
+<Identifier>      { fhir:use @<code> ? ; fhir:type @<CodeableConcept> ? ; fhir:system @<uri> ? ;
+                    fhir:value @<string> ? ; fhir:period @<Period> ? }
+<HumanName>       { fhir:use @<code> ? ; fhir:text @<string> ? ; fhir:family @<string> ? ;
+                    fhir:given @<StringList> ? ; fhir:prefix @<StringList> ? ; fhir:period @<Period> ? }
+<Quantity>        { fhir:value @<decimal> ? ; fhir:comparator @<code> ? ; fhir:unit @<string> ? ;
+                    fhir:system @<uri> ? ; fhir:code @<code> ? }
+<Period>          { fhir:start @<dateTime> ? ; fhir:end @<dateTime> ? }
+<Reference>       { fhir:l IRI ? ; fhir:reference @<string> ? ; fhir:type @<uri> ? ;
+                    fhir:identifier @<Identifier> ? ; fhir:display @<string> ? }
+<Extension>       { fhir:url @<uri> ; fhir:value . ? ; fhir:extension @<ExtensionList> ? }
+<AnyNode>         { fhir:v . ? }
+
+# ---------- primitives: the value always hangs off fhir:v ----------
+
+<id>       { fhir:v LITERAL }
+<string>   { fhir:v LITERAL }
+<code>     { fhir:v LITERAL }
+<xhtml>    { fhir:v rdf:XMLLiteral }
+<boolean>  { fhir:v xsd:boolean }
+<integer>  { fhir:v xsd:integer OR xsd:positiveInteger OR xsd:nonNegativeInteger }
+<decimal>  { fhir:v xsd:decimal OR xsd:double OR xsd:integer }
+<date>     { fhir:v xsd:date OR xsd:gYearMonth OR xsd:gYear OR xsd:dateTime }
+<dateTime> { fhir:v xsd:dateTime OR xsd:date OR xsd:gYearMonth OR xsd:gYear }
+<uri>      { fhir:l IRI ? ; fhir:v xsd:anyURI }
+
+# ---------- repeating elements are RDF collections ----------
+
+<AnyList>             { rdf:first . ;                    rdf:rest @<AnyList> OR [rdf:nil] }
+<StringList>          { rdf:first @<string> ;            rdf:rest @<StringList> OR [rdf:nil] }
+<CodingList>          { rdf:first @<Coding> ;            rdf:rest @<CodingList> OR [rdf:nil] }
+<CodeableConceptList> { rdf:first @<CodeableConcept> ;   rdf:rest @<CodeableConceptList> OR [rdf:nil] }
+<IdentifierList>      { rdf:first @<Identifier> ;        rdf:rest @<IdentifierList> OR [rdf:nil] }
+<HumanNameList>       { rdf:first @<HumanName> ;         rdf:rest @<HumanNameList> OR [rdf:nil] }
+<ReferenceList>       { rdf:first @<Reference> ;         rdf:rest @<ReferenceList> OR [rdf:nil] }
+<ExtensionList>       { rdf:first @<Extension> ;         rdf:rest @<ExtensionList> OR [rdf:nil] }
+<EntryList>           { rdf:first @<BundleEntry> ;       rdf:rest @<EntryList> OR [rdf:nil] }
+`;
+
+/* ------------------------------------------------------------------
+   9. Wiring
+   ------------------------------------------------------------------ */
+const $=(s)=>document.querySelector(s);
+const el={
+  json:$("#json"), nums:$("#linenums"), samples:$("#samples"),
+  ttl:$("#out-ttl"), nt:$("#out-nt"), trip:$("#out-trip"), docs:$("#out-docs"),
+  query:$("#query"), qresults:$("#qresults"), qstat:$("#qstat"), qpresets:$("#qpresets"),
+  schema:$("#schema"), shexShape:$("#shex-shape"), shexFocus:$("#shex-focus"),
+  shexResults:$("#shex-results"), shexStat:$("#shex-stat"),
+  base:$("#base"), link:$("#opt-link"), concept:$("#opt-concept"), short:$("#opt-short"),
+  stState:$("#st-state"), stTriples:$("#st-triples"), stSubj:$("#st-subj"), stLits:$("#st-lits"), stTime:$("#st-time")
+};
+let MODEL={triples:[],notes:[]};
+
+SAMPLES.forEach((s,i)=>{
+  const o=document.createElement("option");
+  o.value=i; o.textContent=s.name; el.samples.appendChild(o);
+});
+
+function setLineNumbers(){
+  const n=el.json.value.split("\n").length;
+  let s="";
+  for(let i=1;i<=n;i++) s+=i+"\n";
+  el.nums.textContent=s;
+  el.nums.scrollTop=el.json.scrollTop;
+}
+el.json.addEventListener("scroll",()=>{el.nums.scrollTop=el.json.scrollTop;});
+el.json.addEventListener("input",()=>{setLineNumbers();schedule();});
+
+let timer=null;
+function schedule(){clearTimeout(timer);timer=setTimeout(run,420);}
+
+function status(state,cls){
+  el.stState.textContent=state;
+  el.stState.className=cls||"";
+}
+
+function run(){
+  const t0=performance.now();
+  const src=el.json.value;
+  try{
+    const ast=parseJSON(src);
+    const res=convert(ast,{
+      base:el.base.value.trim()||"http://example.org/fhir/",
+      link:el.link.checked, concept:el.concept.checked
+    });
+    MODEL=res;
+    const ttl=serializeTurtle(res.triples,{shorthand:el.short.checked});
+    el.ttl.innerHTML=highlightTurtle(ttl);
+    el.nt.textContent=serializeNTriples(res.triples);
+    const subj=new Set(res.triples.map(t=>termKey(t.s))).size;
+    const lits=res.triples.filter(t=>t.o.t==="lit").length;
+    el.stTriples.textContent=res.triples.length;
+    el.stSubj.textContent=subj;
+    el.stLits.textContent=lits;
+    el.stTime.textContent=(performance.now()-t0).toFixed(1)+" ms";
+    status("converted","ok");
+    drawGraph();
+    const active=$("#views .view.on").dataset.view;
+    if(active==="trip") roundTrip();
+    if(active==="shex") runShex();
+  }catch(e){
+    status("error","err");
+    el.ttl.innerHTML='<span class="t-cm"># '+escapeHTML(e.message)+"</span>";
+    el.nt.textContent="";
+    el.stTriples.textContent="0";el.stSubj.textContent="0";el.stLits.textContent="0";
+    el.stTime.textContent="";
+    MODEL={triples:[],notes:[]};
+    drawGraph();
+  }
+}
+const escapeHTML=(s)=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function highlightTurtle(ttl){
+  const out=escapeHTML(ttl)
+    .replace(/(#[^\n]*)/g,'<span class="t-cm">$1</span>')
+    .replace(/(&lt;[^&\s]*&gt;)/g,'<span class="t-iri">$1</span>')
+    .replace(/(&quot;|")((?:[^"\\]|\\.)*)("|&quot;)(\^\^[A-Za-z0-9_\-]+:[A-Za-z0-9_\-]+)?/g,
+      (m,q1,body,q2,dt)=>'<span class="t-lit">"'+body+'"</span>'+(dt?'<span class="t-dt">'+dt+'</span>':""))
+    .replace(/\b(_:[A-Za-z0-9]+)/g,'<span class="t-bn">$1</span>')
+    .replace(/(^|[\s;,\[(])((?:fhir|rdf|rdfs|owl|loinc|sct|rxnorm|icd10|mesh):[A-Za-z0-9_\-.]*)/g,
+      '$1<span class="t-pn">$2</span>')
+    .replace(/^(@prefix)/gm,'<span class="t-pfx">$1</span>');
+  return out;
+}
+
+/* ----- round-trip ----- */
+function roundTrip(){
+  const box=el.trip;
+  if(!MODEL.triples.length){box.innerHTML='<div class="msg note">Convert a resource first.</div>';return;}
+  let original;
+  try{ original=JSON.parse(el.json.value); }
+  catch(e){ box.innerHTML='<div class="msg error">'+escapeHTML(e.message)+"</div>"; return; }
+  let back;
+  try{ back=rdfToJSON(MODEL.triples); }
+  catch(e){ box.innerHTML='<div class="msg error">Could not rebuild JSON: '+escapeHTML(e.message)+"</div>"; return; }
+  const diffs=deepDiff(original,back);
+  const head = diffs.length===0
+    ? '<div class="msg note" style="color:var(--ok)">Lossless. The RDF rebuilds the original JSON exactly — '+MODEL.triples.length+' triples, no differences.</div>'
+    : '<div class="msg note">'+diffs.length+' difference'+(diffs.length===1?"":"s")+' between the original JSON and the JSON rebuilt from the RDF. Each one marks a place where this playground\u2019s type inference needs a StructureDefinition it does not have.</div>';
+  let table="";
+  if(diffs.length){
+    table='<table class="res"><thead><tr><th>Path</th><th>Original</th><th>Rebuilt</th></tr></thead><tbody>'+
+      diffs.slice(0,200).map(d=>"<tr><td>"+escapeHTML(d.path)+"</td><td>"+escapeHTML(String(d.a))+"</td><td>"+escapeHTML(String(d.b))+"</td></tr>").join("")+
+      "</tbody></table>";
+  }
+  const json='<pre class="out mono" style="position:static;max-height:none">'+escapeHTML(JSON.stringify(back,null,2))+"</pre>";
+  box.innerHTML=head+table+'<div class="msg note">JSON rebuilt from the triples</div>'+json;
+}
+
+/* ----- SPARQL ----- */
+function runQuery(){
+  const q=el.query.value;
+  if(!MODEL.triples.length){el.qresults.innerHTML='<div class="msg note">Convert a resource first.</div>';return;}
+  const t0=performance.now();
+  try{
+    const {vars,rows}=runSparql(q,MODEL.triples);
+    const ms=(performance.now()-t0).toFixed(1);
+    el.qstat.textContent=rows.length+" row"+(rows.length===1?"":"s")+" · "+ms+" ms";
+    if(!rows.length){el.qresults.innerHTML='<div class="msg note">No solutions. Check the predicates against the Turtle tab — repeating elements are RDF lists, so you usually need <code>rdf:rest*/rdf:first</code>.</div>';return;}
+    const fmt=(t)=>{
+      if(!t) return '<span style="color:var(--ink-3)">—</span>';
+      if(t.t==="lit") return escapeHTML(t.v);
+      if(t.t==="bnode") return '<span style="color:var(--ink-3)">_:'+escapeHTML(t.v)+"</span>";
+      return '<span style="color:var(--json)">'+escapeHTML(shorten(t.v))+"</span>";
+    };
+    el.qresults.innerHTML='<table class="res"><thead><tr>'+vars.map(v=>"<th>?"+escapeHTML(v)+"</th>").join("")+"</tr></thead><tbody>"+
+      rows.map(r=>"<tr>"+vars.map(v=>"<td>"+fmt(r[v])+"</td>").join("")+"</tr>").join("")+"</tbody></table>";
+  }catch(e){
+    el.qstat.textContent="";
+    el.qresults.innerHTML='<div class="msg error">'+escapeHTML(e.message)+"</div>";
+  }
+}
+function shorten(v){
+  for(const [p,ns] of Object.entries(NS)) if(v.startsWith(ns)) return p+":"+v.slice(ns.length);
+  return v;
+}
+
+/* ----- graph ----- */
+let sim=null;
+function drawGraph(){
+  const svg=$("#graph");
+  const collapse=$("#opt-collapse").checked, showLits=$("#opt-lits").checked, showPreds=$("#opt-preds").checked;
+  svg.innerHTML="";
+  if(!MODEL.triples.length) return;
+
+  let triples=MODEL.triples;
+  if(collapse){
+    /* rewrite list chains: subject --pred[i]--> member */
+    const bySubj=new Map();
+    for(const t of triples){const k=termKey(t.s);if(!bySubj.has(k))bySubj.set(k,[]);bySubj.get(k).push(t);}
+    const listNodes=new Set();
+    const isList=(term)=>{
+      const e=bySubj.get(termKey(term));
+      return !!e&&e.some(t=>t.p.v===RDF_FIRST);
+    };
+    const members=(head)=>{
+      const out=[];let cur=head;
+      while(cur&&!(cur.t==="iri"&&cur.v===RDF_NIL)){
+        const e=bySubj.get(termKey(cur));if(!e)break;
+        listNodes.add(termKey(cur));
+        const f=e.find(t=>t.p.v===RDF_FIRST), r=e.find(t=>t.p.v===RDF_REST);
+        if(f) out.push(f.o);
+        cur=r?r.o:null;
+      }
+      return out;
+    };
+    const next=[];
+    for(const t of triples){
+      if(t.p.v===RDF_FIRST||t.p.v===RDF_REST) continue;
+      if(t.o.t!=="lit"&&isList(t.o)){
+        members(t.o).forEach((m,i)=>next.push({s:t.s,p:iri(t.p.v+"["+i+"]"),o:m}));
+        continue;
+      }
+      next.push(t);
+    }
+    triples=next.filter(t=>!listNodes.has(termKey(t.s)));
+  }
+  if(!showLits) triples=triples.filter(t=>t.o.t!=="lit");
+
+  const nodes=new Map(), links=[];
+  let litIdx=0;
+  const nodeFor=(t,isLiteral)=>{
+    const key=isLiteral?("lit"+(++litIdx)):termKey(t);
+    if(!nodes.has(key)) nodes.set(key,{id:key,term:t,x:0,y:0,vx:0,vy:0});
+    return nodes.get(key);
+  };
+  for(const t of triples){
+    const s=nodeFor(t.s,false);
+    const o=nodeFor(t.o,t.o.t==="lit");
+    links.push({s,o,p:t.p.v});
+  }
+  const list=[...nodes.values()];
+  if(list.length>420){
+    svg.innerHTML='<text x="16" y="28" class="glabel" style="font-size:12px">Graph is large ('+list.length+' nodes). Turn off literals or collapse lists to draw it.</text>';
+    return;
+  }
+  const W=svg.clientWidth||700, H=svg.clientHeight||500;
+  list.forEach((n,i)=>{
+    const a=(i/list.length)*Math.PI*2;
+    n.x=W/2+Math.cos(a)*Math.min(W,H)*0.33+(Math.random()-.5)*20;
+    n.y=H/2+Math.sin(a)*Math.min(W,H)*0.33+(Math.random()-.5)*20;
+  });
+
+  const ns="http://www.w3.org/2000/svg";
+  const g=document.createElementNS(ns,"g");
+  svg.appendChild(g);
+  const edgeEls=links.map(l=>{
+    const line=document.createElementNS(ns,"line");
+    line.setAttribute("class","gedge");
+    g.appendChild(line);
+    let label=null;
+    if(showPreds){
+      label=document.createElementNS(ns,"text");
+      label.setAttribute("class","gedgelabel");
+      label.textContent=shorten(l.p).replace(/^fhir:/,"");
+      g.appendChild(label);
+    }
+    return {l,line,label};
+  });
+  const nodeEls=list.map(n=>{
+    const grp=document.createElementNS(ns,"g");
+    let shape;
+    const t=n.term;
+    if(t.t==="lit"){
+      shape=document.createElementNS(ns,"rect");
+      const w=Math.min(120,Math.max(24,t.v.length*5.4));
+      shape.setAttribute("width",w);shape.setAttribute("height",15);
+      shape.setAttribute("rx",2);
+      shape.setAttribute("fill","var(--ok)");shape.setAttribute("fill-opacity",".16");
+      shape.setAttribute("stroke","var(--ok)");shape.setAttribute("stroke-width","1");
+      n.w=w;n.h=15;
+    } else if(t.t==="bnode"){
+      shape=document.createElementNS(ns,"circle");
+      shape.setAttribute("r",4.5);
+      shape.setAttribute("fill","var(--surface)");
+      shape.setAttribute("stroke","var(--ink-3)");shape.setAttribute("stroke-width","1.2");
+      n.w=9;n.h=9;
+    } else {
+      const concept=Object.values(IRI_STEMS).some(s=>t.v.startsWith(s));
+      shape=document.createElementNS(ns,"rect");
+      const label=shorten(t.v);
+      const w=Math.min(190,Math.max(30,label.length*5.6));
+      shape.setAttribute("width",w);shape.setAttribute("height",17);
+      shape.setAttribute("rx",2);
+      shape.setAttribute("fill",concept?"var(--rdf)":"var(--json)");
+      shape.setAttribute("fill-opacity",".14");
+      shape.setAttribute("stroke",concept?"var(--rdf)":"var(--json)");
+      shape.setAttribute("stroke-width","1");
+      n.w=w;n.h=17;
+    }
+    grp.appendChild(shape);
+    const text=document.createElementNS(ns,"text");
+    text.setAttribute("class","glabel");
+    let lbl = t.t==="lit" ? (t.v.length>20?t.v.slice(0,19)+"…":t.v)
+            : t.t==="bnode" ? "" : shorten(t.v);
+    if(lbl.length>30) lbl=lbl.slice(0,29)+"…";
+    text.textContent=lbl;
+    grp.appendChild(text);
+    g.appendChild(grp);
+    grp.style.cursor="grab";
+    grp.addEventListener("pointerdown",(ev)=>{
+      ev.stopPropagation();
+      grp.setPointerCapture(ev.pointerId);
+      n.fixed=true;
+      const move=(e2)=>{
+        const pt=toLocal(svg,e2);
+        n.x=pt.x;n.y=pt.y;
+      };
+      const up=()=>{n.fixed=false;grp.removeEventListener("pointermove",move);grp.removeEventListener("pointerup",up);};
+      grp.addEventListener("pointermove",move);
+      grp.addEventListener("pointerup",up);
+    });
+    return {n,grp,shape,text};
+  });
+
+  function toLocal(svg,e){
+    const r=svg.getBoundingClientRect();
+    return {x:(e.clientX-r.left-view.tx)/view.k,y:(e.clientY-r.top-view.ty)/view.k};
+  }
+  const view={k:1,tx:0,ty:0};
+  svg.onwheel=(e)=>{
+    e.preventDefault();
+    const r=svg.getBoundingClientRect();
+    const mx=e.clientX-r.left, my=e.clientY-r.top;
+    const f=e.deltaY<0?1.1:1/1.1;
+    view.tx=mx-(mx-view.tx)*f; view.ty=my-(my-view.ty)*f; view.k*=f;
+    applyView();
+  };
+  let panning=null;
+  svg.onpointerdown=(e)=>{panning={x:e.clientX-view.tx,y:e.clientY-view.ty};svg.classList.add("dragging");svg.setPointerCapture(e.pointerId);};
+  svg.onpointermove=(e)=>{if(!panning)return;view.tx=e.clientX-panning.x;view.ty=e.clientY-panning.y;applyView();};
+  svg.onpointerup=()=>{panning=null;svg.classList.remove("dragging");};
+  const applyView=()=>g.setAttribute("transform","translate("+view.tx+","+view.ty+") scale("+view.k+")");
+
+  let alpha=1, frame=0;
+  if(sim) cancelAnimationFrame(sim);
+  function tick(){
+    alpha*=0.985;
+    const k=Math.min(W,H);
+    for(let i=0;i<list.length;i++){
+      const a=list[i];
+      for(let j=i+1;j<list.length;j++){
+        const b=list[j];
+        let dx=b.x-a.x, dy=b.y-a.y;
+        let d2=dx*dx+dy*dy;
+        if(d2<1){dx=Math.random()-.5;dy=Math.random()-.5;d2=1;}
+        if(d2>90000) continue;
+        const f=2200/d2*alpha;
+        const d=Math.sqrt(d2);
+        a.vx-=dx/d*f; a.vy-=dy/d*f;
+        b.vx+=dx/d*f; b.vy+=dy/d*f;
+      }
+      a.vx+=(W/2-a.x)*0.0012*alpha;
+      a.vy+=(H/2-a.y)*0.0012*alpha;
+    }
+    for(const l of links){
+      const dx=l.o.x-l.s.x, dy=l.o.y-l.s.y;
+      const d=Math.sqrt(dx*dx+dy*dy)||1;
+      const target=72;
+      const f=(d-target)*0.018*alpha;
+      l.s.vx+=dx/d*f; l.s.vy+=dy/d*f;
+      l.o.vx-=dx/d*f; l.o.vy-=dy/d*f;
+    }
+    for(const n of list){
+      if(n.fixed){n.vx=0;n.vy=0;continue;}
+      n.vx*=0.82; n.vy*=0.82;
+      n.x+=n.vx; n.y+=n.vy;
+    }
+    for(const {n,grp,shape,text} of nodeEls){
+      if(n.term.t==="bnode"){
+        shape.setAttribute("cx",n.x);shape.setAttribute("cy",n.y);
+        text.setAttribute("x",n.x+7);text.setAttribute("y",n.y+3);
+      }else{
+        shape.setAttribute("x",n.x-n.w/2);shape.setAttribute("y",n.y-n.h/2);
+        text.setAttribute("x",n.x-n.w/2+4);text.setAttribute("y",n.y+3.5);
+      }
+    }
+    for(const {l,line,label} of edgeEls){
+      line.setAttribute("x1",l.s.x);line.setAttribute("y1",l.s.y);
+      line.setAttribute("x2",l.o.x);line.setAttribute("y2",l.o.y);
+      if(label){
+        label.setAttribute("x",(l.s.x+l.o.x)/2);
+        label.setAttribute("y",(l.s.y+l.o.y)/2-2);
+      }
+    }
+    frame++;
+    if(alpha>0.02&&frame<900) sim=requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+/* ----- ShEx ----- */
+let SHEX=null, SHEX_ERR=null;
+function loadSchema(){
+  try{ SHEX=parseShEx(el.schema.value); SHEX_ERR=null; }
+  catch(e){ SHEX=null; SHEX_ERR=e.message; }
+  const keep=el.shexShape.value;
+  el.shexShape.innerHTML="";
+  const opts=["start"].concat(SHEX?SHEX.order:[]);
+  for(const o of opts){
+    const opt=document.createElement("option");
+    opt.value=o; opt.textContent = o==="start" ? "start" : shortIRI(o).replace(/^<|>$/g,"");
+    el.shexShape.appendChild(opt);
+  }
+  if(opts.includes(keep)) el.shexShape.value=keep;
+}
+function fillFocusNodes(){
+  const keep=el.shexFocus.value;
+  el.shexFocus.innerHTML="";
+  const seen=new Set(), opts=[];
+  for(const t of MODEL.triples){
+    if(t.s.t!=="iri") continue;
+    const k=termKey(t.s);
+    if(seen.has(k)) continue;
+    seen.add(k); opts.push(t.s);
+  }
+  const rootKey=MODEL.rootSubject?termKey(MODEL.rootSubject):null;
+  opts.sort((a,b)=>(termKey(a)===rootKey?-1:0)-(termKey(b)===rootKey?-1:0));
+  for(const t of opts){
+    const o=document.createElement("option");
+    o.value=t.v;
+    o.textContent=(rootKey&&termKey(t)===rootKey?"treeRoot · ":"")+(t.v||"<>").replace(el.base.value,"");
+    el.shexFocus.appendChild(o);
+  }
+  if([...el.shexFocus.options].some(o=>o.value===keep)) el.shexFocus.value=keep;
+}
+function runShex(){
+  loadSchema();
+  fillFocusNodes();
+  const box=el.shexResults;
+  el.shexStat.textContent="";
+  if(SHEX_ERR){ box.innerHTML='<div class="msg error">'+escapeHTML(SHEX_ERR)+"</div>"; return; }
+  if(!MODEL.triples.length){ box.innerHTML='<div class="msg note">Convert a resource first.</div>'; return; }
+  const focusIRI=el.shexFocus.value;
+  const focus=MODEL.triples.map(t=>t.s).find(t=>t.t==="iri"&&t.v===focusIRI)||MODEL.rootSubject;
+  const t0=performance.now();
+  let v;
+  try{ v=validateShEx(SHEX,MODEL.triples,focus,el.shexShape.value); }
+  catch(e){ box.innerHTML='<div class="msg error">'+escapeHTML(e.message)+"</div>"; return; }
+  el.shexStat.textContent=(performance.now()-t0).toFixed(1)+" ms · "+SHEX.order.length+" shapes";
+  if(v.error){ box.innerHTML='<div class="msg error">'+escapeHTML(v.error)+"</div>"; return; }
+  const label=shortIRI(v.label).replace(/^<|>$/g,"");
+  const head='<div class="verdict '+(v.ok?"pass":"fail")+'">'+
+    "<b>"+(v.ok?"Conforms":"Does not conform")+"</b>"+
+    '<span class="mono">'+escapeHTML(focus?(focus.v||"<>"):"")+" as &lt;"+escapeHTML(label)+"&gt;</span></div>";
+  let body="";
+  if(v.rows&&v.rows.length){
+    body='<table class="res"><thead><tr><th>Predicate</th><th>Cardinality</th><th>Matched</th><th></th><th>Detail</th></tr></thead><tbody>'+
+      v.rows.map(r=>"<tr>"+
+        "<td>"+escapeHTML(shortIRI(r.pred).replace(/^<|>$/g,""))+"</td>"+
+        "<td>"+r.card+"</td>"+
+        "<td>"+r.matched+(r.found!==r.matched?" of "+r.found:"")+"</td>"+
+        '<td class="'+(r.ok?"st-ok":"st-no")+'">'+(r.ok?"ok":"fail")+"</td>"+
+        "<td>"+escapeHTML(r.note||"")+"</td></tr>").join("")+"</tbody></table>";
+  } else if(v.reason){
+    body='<div class="msg note">'+escapeHTML(v.reason)+"</div>";
+  }
+  if(v.closed&&v.closed.length){
+    body+='<div class="msg error">CLOSED shape, but these predicates are not in it: '+
+      v.closed.map(p=>escapeHTML(shortIRI(p).replace(/^<|>$/g,""))).join(", ")+"</div>";
+  }
+  box.innerHTML=head+body;
+}
+
+/* ----- tabs ----- */
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",String(t===tab)));
+    document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.dataset.view===tab.dataset.view));
+    if(tab.dataset.view==="graph") drawGraph();
+    if(tab.dataset.view==="trip") roundTrip();
+    if(tab.dataset.view==="shex") runShex();
+  });
+});
+
+/* ----- splitter ----- */
+(function(){
+  const gut=$("#gutter"), main=$("#main");
+  let dragging=false;
+  const vertical=()=>window.innerWidth>860;
+  gut.addEventListener("pointerdown",e=>{dragging=true;gut.setPointerCapture(e.pointerId);});
+  gut.addEventListener("pointermove",e=>{
+    if(!dragging) return;
+    const r=main.getBoundingClientRect();
+    if(vertical()){
+      const pct=Math.min(78,Math.max(18,((e.clientX-r.left)/r.width)*100));
+      main.style.gridTemplateColumns="minmax(220px,"+pct+"fr) 6px minmax(260px,"+(100-pct)+"fr)";
+    }else{
+      const pct=Math.min(78,Math.max(18,((e.clientY-r.top)/r.height)*100));
+      main.style.gridTemplateRows="minmax(120px,"+pct+"fr) 6px minmax(160px,"+(100-pct)+"fr)";
+    }
+  });
+  gut.addEventListener("pointerup",()=>{dragging=false;drawGraph();});
+})();
+
+/* ----- buttons ----- */
+$("#btn-convert").onclick=run;
+$("#btn-run").onclick=runQuery;
+$("#btn-relayout").onclick=drawGraph;
+$("#btn-validate").onclick=runShex;
+$("#btn-shex-reset").onclick=()=>{el.schema.value=FHIR_SHEX;runShex();};
+el.shexShape.addEventListener("change",runShex);
+el.shexFocus.addEventListener("change",runShex);
+el.schema.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){e.preventDefault();runShex();}
+});
+$("#btn-roundtrip").onclick=()=>{
+  document.querySelector('.tab[data-view="trip"]').click();
+};
+$("#btn-format").onclick=()=>{
+  try{ el.json.value=JSON.stringify(JSON.parse(el.json.value),null,2); setLineNumbers(); run(); }
+  catch(e){ status("invalid JSON","err"); }
+};
+$("#btn-copy").onclick=async()=>{
+  const text=el.ttl.textContent;
+  try{ await navigator.clipboard.writeText(text); $("#btn-copy").textContent="Copied"; }
+  catch(e){ $("#btn-copy").textContent="Copy failed"; }
+  setTimeout(()=>{$("#btn-copy").textContent="Copy Turtle";},1400);
+};
+$("#btn-theme").onclick=()=>{
+  const cur=document.documentElement.getAttribute("data-theme");
+  const dark=cur==="dark"||(!cur&&matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.setAttribute("data-theme",dark?"light":"dark");
+  $("#btn-theme").textContent=dark?"Dark":"Light";
+  drawGraph();
+};
+[el.base,el.link,el.concept,el.short].forEach(c=>c.addEventListener("input",run));
+["#opt-collapse","#opt-lits","#opt-preds"].forEach(s=>$(s).addEventListener("change",drawGraph));
+el.query.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){e.preventDefault();runQuery();}
+});
+
+el.samples.addEventListener("change",()=>loadSample(+el.samples.value));
+function loadSample(i){
+  const s=SAMPLES[i];
+  el.json.value=JSON.stringify(s.json,null,2);
+  el.query.value=s.query;
+  setLineNumbers();
+  run();
+  if($("#views .view.on").dataset.view==="sparql") runQuery();
+}
+SAMPLES.forEach((s,i)=>{
+  const o=document.createElement("option");
+  o.value=i;o.textContent="Query: "+s.name.split(" — ")[0];
+  el.qpresets.appendChild(o);
+});
+el.qpresets.addEventListener("change",()=>{el.query.value=SAMPLES[+el.qpresets.value].query;runQuery();});
+
+/* ----- docs ----- */
+el.docs.innerHTML=`
+<h2>What this does</h2>
+<p>It converts a FHIR JSON resource into FHIR RDF, serialized as Turtle, using the rules in the
+HL7 FHIR specification. Everything runs in this page — nothing is uploaded, and there is no server.
+Edit the JSON on the left and the RDF, graph and query results update as you type.</p>
+<p>Three things make FHIR RDF different from a naive JSON-to-RDF dump, and each is visible in the Turtle tab:</p>
+<ul>
+<li><b>Every element is a node.</b> A primitive like <code>status</code> becomes a blank node carrying
+<code>fhir:v</code>, so extensions can be attached to it later. <code>fhir:v</code> is the only property in FHIR RDF that holds a literal.</li>
+<li><b>Repeating elements keep their order.</b> They are RDF collections, written with parentheses in
+Turtle, never a bag of unordered triples. That is why most queries need
+<code>rdf:rest*/rdf:first</code> to reach a member.</li>
+<li><b>The focal resource is marked.</b> The resource that is not contained in any other carries
+<code>fhir:nodeRole fhir:treeRoot</code>, so a parser can find the entry point in a graph that holds several resources.</li>
+</ul>
+
+<h2>Rules applied here</h2>
+<table>
+<tr><th>Input</th><th>Output</th></tr>
+<tr><td>Root resource with an <code>id</code></td><td><code>&lt;base + ResourceType/id&gt; a fhir:Type ; fhir:nodeRole fhir:treeRoot</code></td></tr>
+<tr><td>Root resource without an <code>id</code></td><td><code>&lt;&gt;</code> — the document itself</td></tr>
+<tr><td>Primitive element</td><td><code>[ fhir:v "value"^^xsd:type ]</code></td></tr>
+<tr><td>JSON array</td><td>RDF collection: <code>fhir:name ( [...] [...] )</code></td></tr>
+<tr><td><code>valueQuantity</code>, <code>effectiveDateTime</code>, …</td><td><code>fhir:value [ a fhir:Quantity ; … ]</code> — the type moves onto the node</td></tr>
+<tr><td><code>uri</code>, <code>url</code>, <code>canonical</code></td><td><code>fhir:v "…"^^xsd:anyURI</code> plus a sibling <code>fhir:l &lt;…&gt;</code></td></tr>
+<tr><td><code>Reference.reference</code></td><td>optional <code>fhir:l</code> resolved against the base</td></tr>
+<tr><td>Canonical with <code>|version</code></td><td><code>fhir:l</code> rewrites the bar as <code>?version=</code></td></tr>
+<tr><td><code>_birthDate</code> sibling</td><td>merged into the primitive's node as <code>fhir:extension</code></td></tr>
+<tr><td><code>contained</code></td><td>separate subjects at <code>&lt;parent#id&gt;</code>, listed by <code>fhir:contained</code></td></tr>
+<tr><td><code>Bundle.entry.resource</code></td><td>its own subject, keyed on <code>fullUrl</code> when present</td></tr>
+<tr><td><code>modifierExtension</code> on a resource</td><td>the class name is prefixed: <code>a fhir:_MedicationRequest</code></td></tr>
+<tr><td>Coding with a registered system</td><td>a concept IRI on the CodeableConcept: <code>a loinc:29463-7</code></td></tr>
+</table>
+
+<h3>Concept IRIs</h3>
+<p>A <code>&lt;system, code&gt;</code> pair identifies a concept that RDF would rather address with a single IRI.
+HL7 registers the IRI stem for each code system on the terminology site; the concept IRI is the stem
+concatenated with the percent-encoded code. This playground knows the stems for LOINC, SNOMED CT,
+RxNorm, ICD-10 and MeSH, and adds the concept IRI with <code>rdf:type</code> on the CodeableConcept.
+Turn it off with the concept IRIs checkbox to see the difference in the graph.</p>
+
+<h2>Querying</h2>
+<p>The SPARQL tab runs a subset of SPARQL against the converted graph: <code>PREFIX</code>,
+<code>SELECT</code> with <code>DISTINCT</code>, basic graph patterns with <code>;</code> and <code>,</code>,
+blank-node patterns <code>[ ... ]</code>, <code>OPTIONAL</code>, <code>FILTER</code> with
+<code>regex</code>, <code>contains</code>, <code>strstarts</code>, <code>bound</code>, <code>str</code> and
+comparisons, property paths built from <code>/</code>, <code>*</code> and <code>+</code>, plus
+<code>ORDER BY</code>, <code>LIMIT</code> and <code>OFFSET</code>. Press Ctrl/Cmd+Enter to run.</p>
+<p>The one idiom worth memorizing:</p>
+<pre>?patient fhir:name/rdf:rest*/rdf:first ?name .
+?name fhir:family [ fhir:v ?family ] .</pre>
+<p>The first line steps into the collection, the second reads a primitive out of a member node.</p>
+
+<h2>Validating with ShEx</h2>
+<p>The ShEx tab checks the converted graph against a schema, the way
+<a href="https://build.fhir.org/fhir.shex" target="_blank" rel="noopener">fhir.shex</a> is meant to be used.
+It ships with a hand-cut schema covering the samples here — edit it, or paste your own — and reports
+constraint by constraint: which predicate, what cardinality was expected, how many triples matched,
+and what the first offending value was. Pick any resource IRI in the graph as the focus node, so you
+can validate a Bundle entry on its own. Ctrl/Cmd+Enter validates.</p>
+<p>Supported ShExC: <code>PREFIX</code>, <code>start</code>, shape labels, triple constraints with
+<code>CLOSED</code> and <code>EXTRA</code>, nested shapes, <code>@&lt;refs&gt;</code>,
+<code>OR</code> and <code>AND</code>, node constraints (<code>IRI</code>, <code>BNODE</code>,
+<code>LITERAL</code>, <code>NONLITERAL</code>, <code>.</code>, a datatype, a value set, IRI stems with
+<code>~</code>) and cardinalities <code>?</code> <code>*</code> <code>+</code> <code>{m,n}</code>.
+Recursion through RDF lists works because a shape is assumed to hold while it is being checked.
+Not supported: <code>IMPORT</code> (ignored), inheritance with <code>&amp;</code>, semantic actions,
+numeric and string facets, and <code>OneOf</code> — a <code>|</code> is approximated by making its
+branches optional, so the full fhir.shex will parse further than it will validate faithfully.</p>
+
+<h2>Round-trip</h2>
+<p>FHIR RDF is meant to be lossless: JSON, XML and Turtle carry the same information model.
+The round-trip tab converts the generated triples back into JSON and compares it to what you typed.
+Differences point at the places where a converter needs the StructureDefinitions — this page infers
+element types from names and JSON value shapes rather than loading the FHIR definitions, so a
+decimal that happens to be written without a decimal point, or an uncommon <code>uri</code>-typed
+element, can be typed wrongly. Production converters (HAPI, the Delphi reference implementation,
+fhircat) read the definitions and do not guess.</p>
+
+<h2>Where the rules come from</h2>
+<ul>
+<li><a href="https://build.fhir.org/rdf.html" target="_blank" rel="noopener">FHIR RDF, R6 ci-build</a> — the normative serialization rules, including the concept IRI algorithm.</li>
+<li><a href="https://fhir.hl7.org/fhir/rdf.html" target="_blank" rel="noopener">FHIR RDF, published</a> — the released version of the same page.</li>
+<li><a href="https://confluence.hl7.org/spaces/ITS/pages/66922543/RDF+-+FHIR+RDF" target="_blank" rel="noopener">HL7 ITS RDF subgroup</a> — the group that maintains it, jointly with the W3C HCLS interest group.</li>
+<li><a href="https://github.com/w3c-cg/hcls-fhir-rdf/issues" target="_blank" rel="noopener">w3c-cg/hcls-fhir-rdf issues</a> — where the open questions live: ShEx import paths, ShEx for FHIR interfaces, whether contained resources should be queryable, R6 and R7 plans.</li>
+<li><a href="https://fhircat.github.io/fhir-rdf-playground/" target="_blank" rel="noopener">FHIRCat playground</a> — the original browser tool this one answers to, linked from the spec itself.</li>
+<li><a href="https://github.com/yosemiteproject/Tutorial-FHIR-RDF-as-a-Bridge" target="_blank" rel="noopener">FHIR RDF as a Bridge tutorial</a> — Harold Solbrig's walkthrough of using FHIR RDF with SNOMED CT to recognize a cancer diagnosis. The Condition sample here is built for that exercise.</li>
+<li><a href="https://rdfplayground.dcc.uchile.cl/" target="_blank" rel="noopener">RDF Playground (U. Chile)</a> and <a href="https://pablocaeg.github.io/fhir-playground/" target="_blank" rel="noopener">Pablo Caeg's FHIR playground</a> — the teaching tools whose query-alongside-graph layout this borrows.</li>
+</ul>
+
+<h3>Known limits</h3>
+<ul>
+<li>Type inference is heuristic, not StructureDefinition-driven. The round-trip tab tells you when it bites.</li>
+<li>No ShEx or OWL validation. <a href="https://build.fhir.org/fhir.shex" target="_blank" rel="noopener">fhir.shex</a> is the schema to validate against.</li>
+<li>The SPARQL engine handles the patterns in the presets and a good deal more, but it is not a complete implementation: no UNION, CONSTRUCT, ASK, aggregates, named graphs or subqueries.</li>
+<li>XHTML narrative is escaped into an <code>rdf:XMLLiteral</code> but is not parsed or checked.</li>
+</ul>
+`;
+
+/* ----- boot ----- */
+el.schema.value=FHIR_SHEX;
+el.samples.value="0";
+loadSample(0);
+loadSchema();
+$("#btn-theme").textContent=matchMedia("(prefers-color-scheme: dark)").matches?"Light":"Dark";
+window.addEventListener("resize",()=>{clearTimeout(window.__rz);window.__rz=setTimeout(drawGraph,220);});
+</script>
+</body>
+</html>
